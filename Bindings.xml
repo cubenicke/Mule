@@ -1,0 +1,8 @@
+<Bindings>
+	<Binding name="PROFILES" header="MULE">
+		Mule_Command("profiles")
+	</Binding>
+	<Binding name="MULES" header="MULE">
+		Mule_Command("mules")
+	</Binding>
+</Bindings>
