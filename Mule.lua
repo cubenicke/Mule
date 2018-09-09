@@ -1060,6 +1060,9 @@ function Mule_UnRegister(player, name)
 		if k == name then
 			Mule["players"][player]["mules"][name] = nil
 			Print("Removed mule: "..name)
+			if MuleFrame and MuleFrame:IsShown() then
+				MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
+			end
 			return
 		end
 	end
@@ -1115,6 +1118,9 @@ function Mule_AddToMule(player, name, filter)
 	end
 	Print("Adding filter to mule: "..name..", "..filter)
 	tinsert(Mule["players"][player]["mules"][name], filter)
+	if MuleFrame and MuleFrame:IsShown() then
+		MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
+	end
 	return true
 end
 
@@ -1127,6 +1133,9 @@ function Mule_RemoveFromMule(player, mule, filter)
 		if v == filter then
 			Mule["players"][player]["mules"][mule][k] = nil
 			Print("Removed "..filter.." from "..mule)
+			if MuleFrame and MuleFrame:IsShown() then
+				MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
+			end
 			return true
 		end
 	end
@@ -1317,7 +1326,7 @@ local slashcommands = {
 	{ cmd = "remove", fn = function(args) removeProfile(args); Mule_ShowProfiles(UnitName("player")); end, help = "remove <profile> - remove a profile" },
 	{ cmd = "supply", fn = function(args) supplyHandler(fixName(args)) end, help = "supply [<player>] - supply player or self (only at Bank or at Vendor)" },
 	{ cmd = "unload", fn = function(args) unload() end, help = "unload - sell to vendor store at bank or mail to mules" },
-	{ cmd = "unregister", fn = function(args) Mule_UnRegister(UnitName("player"), fixName(args)) MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE") end, help = "unregister <mule> - Remove a mule" },
+	{ cmd = "unregister", fn = function(args) Mule_UnRegister(UnitName("player"), fixName(args)) end, help = "unregister <mule> - Remove a mule" },
 	-- Debugging
 	{ cmd = "debug", fn = function(args) if toggleDebug() then Print("Debug is now on") else Print("Debug is now off") end end, help = "debug - toggle debug output" },
 	{ cmd = "diff", fn = function(args) handleDiff(args) end, help = "diff - check item diff against active profile" },
