@@ -475,6 +475,7 @@ function MuleFrame_Create()
 			local v = MFVars.tree[k]
 			src_r = src_r + 1
 			i = 1
+			-- Draw Parents
 			if src_r >= MFVars.startRow then
 				dst_r = dst_r + 1
 				if  dst_r <= MFVars.noRows then
@@ -491,6 +492,7 @@ function MuleFrame_Create()
 					frame.row[dst_r].minus_icon:Show()
 					frame.row[dst_r].plus_icon:Hide()
 				end
+				-- Draw childs
 				i = i + 1
 				for l,m in pairs(v) do
 					if l ~= "collapsed" then
@@ -506,6 +508,9 @@ function MuleFrame_Create()
 							if MFVars.mode == "PROFILE" then
 								frame.row[dst_r].dec_icon:Show()
 								frame.row[dst_r].inc_icon:Show()
+							else
+								frame.row[dst_r].dec_icon:Hide()
+								frame.row[dst_r].inc_icon:Hide()
 							end
 						end
 					end
