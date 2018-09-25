@@ -304,7 +304,7 @@ function sendItem(name, item, count)
 	local is_SendMailFrame_Shown = SendMailFrame:IsShown();
 	if not is_SendMailFrame_Shown then
 		-- Delay first mail sent
-		MuleMail.lastSend = GetTime() + 2
+		MuleMail.lastSend = GetTime() + 5
 		MailFrameTab2:Click()
 		MailOpened = true
 		return 0
@@ -845,24 +845,26 @@ local function supplyFromVendor()
 	local fail = 0
 	for index=1, GetMerchantNumItems() do
 		local link = GetMerchantItemLink(index)
-		local found	= false
-		local name, _, price, quantity, numAvailable, _, _ = GetMerchantItemInfo(index)
-		local _, _, _, _, id, _, _, _, _, _, _, _, _, _ = string.find(link, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
-		Debug("Found id: "..tostring(id).." "..name..tostring(quantity))
-		for k, v in pairs(diff) do
-			if tonumber(k) == tonumber(id) then
-				local amount = math.floor(v / quantity)
-				found = true
-				if amount and quantity then
-					Print("Buying "..name.." x "..tostring(quantity * amount))
-					for j = 1, amount do
-						BuyMerchantItem(index)
+		if link then
+			local found	= false
+			local name, _, price, quantity, numAvailable, _, _ = GetMerchantItemInfo(index)
+			local _, _, _, _, id, _, _, _, _, _, _, _, _, _ = string.find(link, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+			Debug("Found id: "..tostring(id).." "..name..tostring(quantity))
+			for k, v in pairs(diff) do
+				if tonumber(k) == tonumber(id) then
+					local amount = math.floor(v / quantity)
+					found = true
+					if amount and quantity then
+						Print("Buying "..name.." x "..tostring(quantity * amount))
+						for j = 1, amount do
+							BuyMerchantItem(index)
+						end
 					end
 				end
- 			end
-		end
-		if not found then
-			fail = fail + 1
+			end
+			if not found then
+				fail = fail + 1
+			end
 		end
 	end
 	if CanMerchantRepair() then

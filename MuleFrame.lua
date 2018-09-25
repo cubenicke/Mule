@@ -380,6 +380,7 @@ function MuleFrame_Create()
 
 	frame:SetMovable(true)
 	frame:EnableMouse(true)
+	frame:EnableMouseWheel(true) 
 	frame:SetClampedToScreen(false)
 	frame:RegisterForDrag("LeftButton")
 	frame:Hide()
@@ -394,6 +395,15 @@ function MuleFrame_Create()
 		if arg1 == "LeftButton" and this.isMoving then
 			this:StopMovingOrSizing();
 			this.isMoving = false;
+		end
+	end)
+	frame:SetScript("OnMouseWheel", function()
+		if arg1 < 0 and MFVars.startRow < MFVars.maxRows then
+			MFVars.startRow = MFVars.startRow + 1
+			frame.slider:SetValue(frame.slider:GetValue() + 1)
+		elseif arg1 >= 0 and MFVars.startRow > 0 then
+			MFVars.startRow = MFVars.startRow - 1
+			frame.slider:SetValue(frame.slider:GetValue() - 1)
 		end
 	end)
 	frame:SetScript("OnHide", function()
