@@ -14,7 +14,8 @@ local MFVars = {
 	startRow = 1,
 	noRows = 1,
 	mode = "MULE",
-	maxRows = 1
+	maxRows = 1,
+	keepPos = false
 	}
 
 function MuleFrame_SetTree(_tree, mode)
@@ -22,7 +23,10 @@ function MuleFrame_SetTree(_tree, mode)
 	MFVars.sorted = {}
 	for k,_ in pairs(MFVars.tree) do table.insert(MFVars.sorted,k) end
 	table.sort(MFVars.sorted, function(a,b) return string.lower(a) < string.lower(b) end)
-	MFVars.startRow = 1
+	if not MFVars.keepPos then
+		MFVars.startRow = 1
+	end
+	MFVars.keepPos = false
 	MFVars.mode = mode
 	MFVars.maxRows = 1
 end
@@ -166,6 +170,7 @@ local function CreateRow(hParent, id)
 				name = splitOnFirst(name, " x ")
 				local item = Mule_GetItemFromName(name)
 				if item then
+					MFVars.keepPos = true
 					Mule_AddToProfile(UnitName("player"), ownername, item.id, item.stack)
 					Mule_ShowProfiles(UnitName("player"))
 				end
@@ -197,6 +202,7 @@ local function CreateRow(hParent, id)
 					-- owner Strip (Active)
 					owner = splitOnFirst(owner, " %(Active%)")
 					Mule_RemoveProfile(UnitName("player"), owner)
+					MFVars.keepPos = true
 					Mule_ShowProfiles(UnitName("player"))
 					return
 				end
@@ -219,6 +225,7 @@ local function CreateRow(hParent, id)
 				if owner == nil then
 					owner = frame.text:GetText()
 					owner = splitOnFirst(owner, " %(Active%)")
+					MFVars.keepPos = true
 					Mule_ActivateProfile(owner)
 					Mule_ShowProfiles(UnitName("player"))
 				end
@@ -430,6 +437,7 @@ function MuleFrame_Create()
 				if item then
 					local count = Mule_AddToProfile(UnitName("player"), ownername, item.id, item.stack)
 					DEFAULT_CHAT_FRAME:AddMessage("Adding to "..owner.." "..item.name.." x "..tostring(count))
+					MFVars.keepPos = true
 					Mule_ShowProfiles(UnitName("player"))
 				else
 					DEFAULT_CHAT_FRAME:AddMessage("item failed")
@@ -460,7 +468,19 @@ function MuleFrame_Create()
 	btn_close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -12)
 	btn_close:SetWidth(24)
 	btn_close:SetHeight(24)
+
+	-- Create Mule icon
+	local icon = CreateFrame("Frame", nil, frame)
+	icon:SetFrameStrata("BACKGROUND")
+	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -18)
+	icon:SetWidth(32)
+	icon:SetHeight(32)
 	
+	local icon_tex = icon:CreateTexture(nil, "BACKGROUND")
+	icon_tex:SetTexture("Interface\\Addons\\Mule\\icons\\donkey-icon-32x32.tga")
+	icon_tex:SetAllPoints(icon)
+	icon.texture = icon_tex
+
 	frame.btn_close = btn_close
 
 	frame.btn_close:SetScript("OnClick", function()
