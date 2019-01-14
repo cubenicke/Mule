@@ -209,7 +209,8 @@ local function CreateRow(hParent, id)
 				local name = frame.text:GetText()
 				-- name strip " x <nn>"
 				name = splitOnFirst(name, " x ")
-				Mule_RemoveFromProfile(UnitName("player"), owner, name)
+				_owner = splitOnFirst(owner, " %(Active%)")
+				Mule_RemoveFromProfile(UnitName("player"), _owner, name)
 				for _,k in pairs(MFVars.sorted) do
 					local v = MFVars.tree[k]
 					if owner == k then

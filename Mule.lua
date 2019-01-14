@@ -510,6 +510,7 @@ function Mule_RemoveProfile(player, profile)
 	for k, v in pairs(Mule["players"][player]["profiles"]) do
 		if k == profile then
 			Mule["players"][player]["profiles"][k] = nil
+			Mule["players"][player]["profiles"][k].count = 0
 			return true
 		end
 	end
@@ -518,13 +519,20 @@ end
 -- Remove item from profile
 function Mule_RemoveFromProfile(player, profile, name)
 	for k, v in pairs(Mule["players"][player]["profiles"]) do
-		for l,s in pairs(Mule["players"][player]["profiles"][k]) do
-			if s.name == name then
-				Mule["players"][player]["profiles"][k][l] = nil
-				return id
+		if k == profile then
+			for l,s in pairs(Mule["players"][player]["profiles"][k]) do
+				Debug("Profileitem "..s.name)
+				if s.name == name then
+					Print("Removing "..name.." from "..k)
+					Mule["players"][player]["profiles"][k][l] = nil
+					return id
+				end
 			end
+			Print("Not in profile "..name)
+			return 0
 		end
 	end
+	Debug("No profile exists for this player "..profile.. "player "..player)
 	return 0
 end
 
