@@ -153,8 +153,12 @@ end
 --------------------------------------
 -- Get item id from a link
 local function getIdFromLink(link)
-	local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name = string.find(link, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
-	return tonumber(Id), Name
+	if link then
+		local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name = string.find(link, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+		return tonumber(Id), Name
+	else
+		return nil
+	end
 end
 --------------------------------------
 -- Get item id from bag position
@@ -178,6 +182,11 @@ function Mule_GetItemFromName(name)
 			end
 		end
 	end
+end
+--------------------------------------
+function Mule_GetItemName(id)
+	local name, link, quality, _, type, subType, stack, invType = GetItemInfo(id)
+	return name
 end
 --------------------------------------
 -- Get item info from id
@@ -229,6 +238,17 @@ local function getCurrentInventory(name)
 					local _, count = GetContainerItemInfo(container, position)
 					Debug("Found "..tostring(count).." x "..tostring(itemId).." on "..tostring(container).." "..tostring(position))
 					inventory[tonumber(itemId)] = (inventory[tonumber(itemId)] or 0) + count
+				end
+			end
+		end
+		-- Skip ammo slot (0), shirt tabbard and bags
+		for slotId = 1, 18 do
+			local itemLink = GetInventoryItemLink("player", slotId)
+			if itemLink or slotId ~= 4 then
+				local itemId = getIdFromLink(itemLink)
+				if itemId then
+					Debug("Wearing "..tostring(itemId))
+					inventory[tonumber(itemId)] = (inventory[tonumber(itemId)] or 0) + 1
 				end
 			end
 		end
@@ -452,6 +472,20 @@ function createProfile(profile)
 			Debug("Adding "..tostring(k).." "..item.name)
 			item.count = v
 			inv[k] = item
+		end
+	end
+	for slotId = 1, 18 do
+		local itemLink = GetInventoryItemLink("player", slotId)
+		if itemLink or slotId ~= 4 then
+			local itemId = getIdFromLink(itemLink)
+			if itemId then
+				item = Mule_GetItem(itemId)
+				if item then
+					Debug("Wearing "..tostring(itemId).." "..item.name)
+					item.count = v
+					inv[tostring(itemId)] = item
+				end
+			end
 		end
 	end
 	Print("Inventory updated")
@@ -691,7 +725,7 @@ function MoveTo(toBank, src_container, src_position, dest_count)
 		end
 		-- No empty slot found
 		Print("Error: bags full")
-		return copy_count
+		return 0
 	end
 	return copy_count
 end
@@ -744,13 +778,17 @@ function findWhatsExcess(mailable)
 	end
 	local active = Mule["players"][name]["active"]
 	local check = Mule["players"][name]["profiles"][active]
-	for s, t in pairs(inv) do
+	for k,v in pairs(inv) do
 		for k, v in pairs(check) do
-			if tonumber(v.id) == s then
-				inv[s] = inv[s] - v.count
+			if v and tonumber(v.id) == s then
+				if tonumber(inv[s])  > v.count then
+					inv[s] = (inv[s] or 0) - v.count
+				else
+					inv[s] = 0
+				end
 			end
 		end
-		if inv[s] > 0 then
+		if (tonumber(inv[s]) or 0) > 0 then
 			Debug("Extra items "..tostring(s))
 			if (not mailable) or isMailable(s) then
 				excess[s] = inv[s]
@@ -796,7 +834,7 @@ local function findWhatsMissing(name)
 			Debug("Not found "..tostring(v.count).." of "..tostring(k))
 			diff[k] = v.count
 			diffs = diffs + 1
-		elseif inv[k] > 0 then
+		elseif (tonumber(inv[k]) or 0) > 0 then
 			diff[k] = inv[k]
 			diffs = diffs + 1
 		end
@@ -818,8 +856,8 @@ local function supplyFromBank()
 	for k, v in pairs(diff) do
 		fail = fail + moveItem(false, k, v)
 	end
-	--return fail == 0
-	return 0
+	Debug("Supply Failed: "..fail)
+	return fail == 0
 end
 
 local function handleLockedItem()
@@ -981,9 +1019,9 @@ local function handleExcess(name)
 		return true
 	end
 	for k, v in pairs(diff) do
-		local item = Mule_GetItem(k)
-		if item then
-			Print(item.name.." "..k.." x "..tostring(v))
+		local name = Mule_GetItemName(k)
+		if name then
+			Print(name.." "..k.." x "..tostring(v))
 		else
 			Print("<NN> "..k.." x "..tostring(v))
 		end
@@ -996,10 +1034,10 @@ local function supply(name)
 	-- Try refill name with consumables
 	if atBank then
 		if supplyFromBank() then
-			if _G.SortBags ~= nil and _G.SortBankBags ~= nil then
-				_G.SortBags()
-				_G.SortBankBags()
-			end
+			--if _G.SortBags ~= nil and _G.SortBankBags ~= nil then
+			--	_G.SortBags()
+			--	_G.SortBankBags()
+			--end
 			return
 		end
 	end
@@ -1195,46 +1233,48 @@ local function unload()
 	
 	for id,c in pairs(excess) do
 		local item = Mule_GetItem(tonumber(id))
-		Debug("Excess item "..item.name)
-		if atMail and item.quality == 0 then
-			Debug("Not mailing Gray items "..item.name)
-		elseif atBank then
-			if moveItem(true, item.id, c) == 0 then
-				count = count + 1
-			end
-		else
-			for m,v in pairs(Mule["players"][UnitName("player")]["mules"]) do
-				if ((atMail and (m ~= "vendor")) or (atVendor and m == "vendor")) and item then
-					for n,f in pairs(v) do
-						if m == UnitName("player") then
-							Debug("self is mule for item")
-						elseif item.soulbound then
-							Debug("soulbound item "..item.name)
-						elseif item.quest then
-							Debug("quest item "..item.name)
-						elseif item.bop then
-							Debug("BOP item "..item.name)
-						elseif "default" == f then
-							addSendQueue(m, item.id, c)
-						elseif item.name == f then
-							Debug("Name is matching "..item.name)
-							count = count + 1
-							if atVendor then
-								sendItem(nil, tonumber(item.id), c)
-							elseif atMail then
-								addSendQueue(m, tonumber(item.id), c)
+		if item then
+			Debug("Excess item "..item.name)
+			if atMail and item.quality == 0 then
+				Debug("Not mailing Gray items "..item.name)
+			elseif atBank then
+				if moveItem(true, item.id, c) == 0 then
+					count = count + 1
+				end
+			else
+				for m,v in pairs(Mule["players"][UnitName("player")]["mules"]) do
+					if ((atMail and (m ~= "vendor")) or (atVendor and m == "vendor")) and item then
+						for n,f in pairs(v) do
+							if m == UnitName("player") then
+								Debug("self is mule for item")
+							elseif item.soulbound then
+								Debug("soulbound item "..item.name)
+							elseif item.quest then
+								Debug("quest item "..item.name)
+							elseif item.bop then
+								Debug("BOP item "..item.name)
+							elseif "default" == f then
+								addSendQueue(m, item.id, c)
+							elseif item.name == f then
+								Debug("Name is matching "..item.name)
+								count = count + 1
+								if atVendor then
+									sendItem(nil, tonumber(item.id), c)
+								elseif atMail then
+									addSendQueue(m, tonumber(item.id), c)
+								end
+							elseif ((not (item.type == "")) and item.type == f) or (not (item.requires == "")) and item.requires == f then
+								Debug("Type is matching "..item.type)
+								count = count + 1
+								if atVendor then
+									sendItem(nil, tonumber(item.id), c)
+								elseif atMail then
+									--selltovendor
+									addSendQueue(m, tonumber(item.id), c)
+								end
+							else
+								Debug("Not matching")
 							end
-						elseif ((not (item.type == "")) and item.type == f) or (not (item.requires == "")) and item.requires == f then
-							Debug("Type is matching "..item.type)
-							count = count + 1
-							if atVendor then
-								sendItem(nil, tonumber(item.id), c)
-							elseif atMail then
-								--selltovendor
-								addSendQueue(m, tonumber(item.id), c)
-							end
-						else
-							Debug("Not matching")
 						end
 					end
 				end
