@@ -236,7 +236,12 @@ local function getCurrentInventory(name)
 				local itemId = ItemID(container, position)
 				if itemId ~= nil then
 					local _, count = GetContainerItemInfo(container, position)
-					Debug("Found "..tostring(count).." x "..tostring(itemId).." on "..tostring(container).." "..tostring(position))
+					local name = Mule_GetItemName(tonumber(itemId))
+					if name then
+						Debug("Found "..tostring(count).." x "..name.." on "..tostring(container).." "..tostring(position))
+					else
+						Debug("Found "..tostring(count).." x "..tostring(itemId).." on "..tostring(container).." "..tostring(position))
+					end
 					inventory[tonumber(itemId)] = (inventory[tonumber(itemId)] or 0) + count
 				end
 			end
@@ -247,7 +252,12 @@ local function getCurrentInventory(name)
 			if itemLink or slotId ~= 4 then
 				local itemId = getIdFromLink(itemLink)
 				if itemId then
-					Debug("Wearing "..tostring(itemId))
+					local name = Mule_GetItemName(tonumber(itemId))
+					if name then
+						Debug("Wearing "..name)
+					else
+						Debug("Wearing "..tostring(itemId))
+					end
 					inventory[tonumber(itemId)] = (inventory[tonumber(itemId)] or 0) + 1
 				end
 			end
@@ -778,7 +788,7 @@ function findWhatsExcess(mailable)
 	end
 	local active = Mule["players"][name]["active"]
 	local check = Mule["players"][name]["profiles"][active]
-	for k,v in pairs(inv) do
+	for s,_ in pairs(inv) do
 		for k, v in pairs(check) do
 			if v and tonumber(v.id) == s then
 				if tonumber(inv[s])  > v.count then
