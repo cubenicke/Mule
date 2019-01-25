@@ -119,7 +119,11 @@ function TooltipInfo(container, position)
 
 	MuleTooltip:SetOwner(UIParent, 'ANCHOR_NONE')
 	MuleTooltip:ClearLines()
-	MuleTooltip:SetBagItem(container, position)
+	if container == "player" then
+		MuleTooltip:SetInventoryItem("player", position)
+	else
+		MuleTooltip:SetBagItem(container, position)
+	end
 
 	local charges, usable, soulbound, quest, conjured, bop, requires
 	for i = 1, MuleTooltip:NumLines() do
@@ -204,6 +208,30 @@ function Mule_GetItem(id)
 			local charges, usable, soulbound, quest, conjured, bop, requires = TooltipInfo(container, position)
 			local itemId = ItemID(container, position)
 			if itemId and tonumber(itemId) == id then
+				local item = {}
+				item.id = id
+				item.name = name
+				item.link = link
+				item.type = type
+				item.quality = quality
+				item.subtype = subtype
+				item.stack = stack
+				item.charges = charges
+				item.soulbound = soulbound
+				item.quest = quest
+				item.bop = bop
+				item.conjured = conjured
+				item.requires = requires
+				return item
+			end
+		end
+	end
+	for position = 1, 18 do
+		local itemLink = GetInventoryItemLink("player", position)
+		if itemLink or slotId ~= 4 then
+			local itemId = getIdFromLink(itemLink)
+			if itemId == id then
+				local charges, usable, soulbound, quest, conjured, bop, requires = TooltipInfo("player", position)
 				local item = {}
 				item.id = id
 				item.name = name
@@ -502,6 +530,36 @@ function createProfile(profile)
 	return true
 end
 
+function Mule_addWorn(profile)
+	local player = UnitName("player")
+	if profile == nil or profile == "" then
+		profile = Mule["players"][player]["active"]
+	end
+	if not profile then
+		Print("No active profile")
+	end
+	local count = {}
+	for slotId = 1, 18 do
+		local itemLink = GetInventoryItemLink("player", slotId)
+		if itemLink or slotId ~= 4 then
+			local itemId = getIdFromLink(itemLink)
+			if itemId then
+				local item = Mule_GetItem(tonumber(itemId))
+				count[itemId] = (count[itemId] or 0) + 1
+				if item then
+					if Mule["players"][player]["profiles"][profile][itemId] and Mule["players"][player]["profiles"][profile][itemId].count == count[itemId] then
+						-- Already exists in this profile
+					else
+						Print("Added "..item.name)
+						Mule["players"][player]["profiles"][profile][itemId] = item
+						Mule["players"][player]["profiles"][profile][itemId].count = count[itemId]
+					end
+				end
+			end
+		end
+	end
+end
+
 -- Empty an existing profile
 function removeProfile(profile)
 	local name = UnitName("player")
@@ -790,8 +848,11 @@ function findWhatsExcess(mailable)
 	local check = Mule["players"][name]["profiles"][active]
 	for s,_ in pairs(inv) do
 		for k, v in pairs(check) do
+			if not v.count then
+				v.count = 0
+			end
 			if v and tonumber(v.id) == s then
-				if tonumber(inv[s])  > v.count then
+				if tonumber(inv[s])  > tonumber(v.count) then
 					inv[s] = (inv[s] or 0) - v.count
 				else
 					inv[s] = 0
@@ -864,7 +925,10 @@ local function supplyFromBank()
 	-- find items corresponding to diff in bank and move to bags
 	local fail = 0
 	for k, v in pairs(diff) do
-		fail = fail + moveItem(false, k, v)
+		local count = moveItem(false, k, v)
+		if count == 0 then
+			fail = fail + 1
+		end
 	end
 	Debug("Supply Failed: "..fail)
 	return fail == 0
@@ -1043,11 +1107,13 @@ end
 local function supply(name)
 	-- Try refill name with consumables
 	if atBank then
-		if supplyFromBank() then
-			--if _G.SortBags ~= nil and _G.SortBankBags ~= nil then
-			--	_G.SortBags()
-			--	_G.SortBankBags()
-			--end
+		if supplyFromBank() == true then
+			if _G.SortBags ~= nil and _G.SortBankBags ~= nil then
+				_G.SortBags()
+				_G.SortBankBags()
+			end
+		else
+			Debug("Supply not complete")
 			return
 		end
 	end
@@ -1387,6 +1453,7 @@ local slashcommands = {
 	{ cmd = "supply", fn = function(args) supplyHandler(fixName(args)) end, help = "supply [<player>] - supply player or self (only at Bank or at Vendor)" },
 	{ cmd = "unload", fn = function(args) unload() end, help = "unload - sell to vendor store at bank or mail to mules" },
 	{ cmd = "unregister", fn = function(args) Mule_UnRegister(UnitName("player"), fixName(args)) end, help = "unregister <mule> - Remove a mule" },
+	{ cmd = "addworn", fn = function(args) Mule_addWorn() end,  help = "Add worn items to active profile" },
 	-- Debugging
 	{ cmd = "debug", fn = function(args) if toggleDebug() then Print("Debug is now on") else Print("Debug is now off") end end, help = "debug - toggle debug output" },
 	{ cmd = "diff", fn = function(args) handleDiff(args) end, help = "diff - check item diff against active profile" },
