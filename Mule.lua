@@ -189,7 +189,7 @@ function Mule_GetItemFromName(name)
 end
 --------------------------------------
 function Mule_GetItemName(id)
-	local name, link, quality, _, type, subType, stack, invType = GetItemInfo(id)
+	local name, link, quality, _, _, _, _, _ = GetItemInfo(id)
 	return name
 end
 --------------------------------------
@@ -1559,16 +1559,7 @@ local function handleChat(msg, author, type, addon)
 	return true
 end
 ------------------------------------------------
---local errors = {{ "ERR_INV_FULL", "Inventory full"}}
 local function handleErrorMessage(args)
-	--TODO
-	--for k,v in pair(errors) do
-	--	if v[0] == args[1] then
-	--		Print(v[1])
-	--	end
-	--if args[1] == "ERR_INV_FULL" then
-	--end
-	--(arg1 == ERR_MAIL_TO_SELF or arg1 == ERR_PLAYER_WRONG_FACTION or arg1 == ERR_MAIL_TARGET_NOT_FOUND or arg1 == ERR_MAIL_REACHED_CAP) then
 	Debug("myErr:"..args[1])
 end
 

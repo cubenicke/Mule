@@ -104,11 +104,10 @@ local function addToProfile(row, frame, add)
 	if profile == nil then
 		return 0
 	end
-	local item = Mule_GetItemFromName(name)
+	local item = Mule_GetItemFromProfile(UnitName("player"), name)
 	if item == nil then
 		return 0
 	end
-	--("Trying to add "..item.name)
 	local newCount = Mule_AddToProfile(UnitName("player"), profile, item.id, add)
 	if newCount == 0 then
 		frame.dec_icon:Hide()
