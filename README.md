@@ -72,6 +72,7 @@ Keybind can be done to 'show profiles' and 'show mule'
 ## Reference
 ```
 /mule activate <profile> - Set <profile> as active profile, can also click on profile in profiles view
+/mule addworn - Add worn items to current profile
 /mule base - Update "base" profile
 /mule diff - output items that is missing from active profile
 /mule excess - output stuff that isn't included in active profile

@@ -11,6 +11,7 @@ Written by CubeNicke aka Yrrol
 /mule remove <profile> - remove a profile
 /mule supply - resupply items (at bank or at vendor)
 /mule unload - store excess items for current profile (at bank)
+/mule addworn - Add worn items to current profile
 
 -- Role: Farmer
 /mule register <mule name> - register a mule
