@@ -1014,9 +1014,10 @@ local function reqDiff(name, addon)
 			end
 		elseif UnitLevel("player") >= 10 then
 			SendChatMessage("Mule:DiffReq-"..name, "WHISPER", nil, name)
-		else
+		elseif muleSentInvite == nil or muleSentInvite + 3 < GetTime() then
 			Print("Inviting "..name)
 			InviteByName(name)
+			muleSentInvite = GetTime()
 		end
 		return true
 	end
