@@ -995,7 +995,40 @@ local function supplyFromVendor()
 	atVendor = false
 	return fail == 0
 end
-
+-- Request to provide mules
+local function reqSynq(name, addon)
+	for k,v in pairs(Mule["players"]) do
+		if k == name then
+			local player = UnitName("player")
+			for l,w in pairs(Mule["players"][name]["mules"]) do
+				for m, filter in pairs(w) do
+					if Mule["players"][player]["mules"][l] == nil then
+						Mule["players"][player]["mules"][l] = {}
+					end
+					if m ~= "collapsed" then
+						Mule_AddToMule(player, l, filter)
+					end
+				end
+			end
+			Print("Synqed with "..name)
+			return true
+		end
+	end
+	if (UnitName("party1") or "") == name then
+		if (addon) then
+			SendAddonMessage("Mule", "Mule:SynqReq-"..name, "PARTY")
+		else
+			SendChatMessage("Mule:SynqReq-"..name, "PARTY", nil, name)
+		end
+	elseif UnitLevel("player") >= 10 then
+		SendChatMessage("Mule:SynqReq-"..name, "WHISPER", nil, name)
+	elseif muleSentInvite == nil or muleSentInvite + 3 < GetTime() then
+		Print("Inviting "..name)
+		InviteByName(name)
+		muleSentInvite = GetTime()
+	end
+	return true
+end
 -- Request diff from remote source if not remote function will fail
 local function reqDiff(name, addon)
 	-- return false if it is a local player
@@ -1143,6 +1176,14 @@ local function supply(name)
 		end
 	end
 	Print("Supplied "..name)
+end
+
+local function synqHandler(options)
+	if options == nil or options == "" then
+		Print("Need name to send mules to.")
+		return false
+	end
+	reqSynq(options, true)
 end
 
 -- helper for slash supply
@@ -1456,6 +1497,7 @@ local slashcommands = {
 	{ cmd = "unload", fn = function(args) unload() end, help = "unload - sell to vendor store at bank or mail to mules" },
 	{ cmd = "unregister", fn = function(args) Mule_UnRegister(UnitName("player"), fixName(args)) end, help = "unregister <mule> - Remove a mule" },
 	{ cmd = "addworn", fn = function(args) Mule_addWorn() end,  help = "Add worn items to active profile" },
+	{ cmd = "synq", fn = function(args) synqHandler(args) end, help = "Synq known mules" },
 	-- Debugging
 	{ cmd = "debug", fn = function(args) if toggleDebug() then Print("Debug is now on") else Print("Debug is now off") end end, help = "debug - toggle debug output" },
 	{ cmd = "diff", fn = function(args) handleDiff(args) end, help = "diff - check item diff against active profile" },
@@ -1523,13 +1565,36 @@ local function handleChat(msg, author, type, addon)
 		if type == "PARTY" then
 			LeaveParty()
 		end
+	elseif "SynqReq" == cmd then
+		if player == UnitName("player") then
+			for k,v in pairs(Mule["players"][player]["mules"]) do
+				local send = "Mule:Synq-"..k
+				for l,w in pairs(v) do
+					if l ~= "collapsed" then
+						send = send.. "," ..w
+					end
+				end
+				if addon then
+					SendAddonMessage("Mule", send, type)
+				else
+					SendChatMessage(send, type, nil, author)
+				end
+			end
+			if type == "PARTY" then
+				LeaveParty()
+			end
+		end
 	elseif "Synq" == cmd then
 		local i = 0, f
-		i, _, mule = string.find(player, "(.*),")
-		while true do
-			i,_,f = string.find(player, ",(^,*)", i + 1)
-			if i == nil then break end
-			Mule_AddToMule(UnitName("player"), mule, f)
+		local startPos, endPos, firstWord, restOfString = string.find( player, "([^,]+),(.*)");
+		mule = firstWord
+		if Mule["players"][UnitName("player")]["mules"][mule] == nil then
+			Mule["players"][UnitName("player")]["mules"][mule] = {}
+		end
+		while restOfString do
+			startPos, endPos, firstWord, restOfString = string.find( restOfString, "([^,]+),(.*)");
+			if firstWord == nil then break end
+			Mule_AddToMule(UnitName("player"), mule, firstWord)
 		end
 	elseif "DiffReq" == cmd then
 		if player == UnitName("player") then
