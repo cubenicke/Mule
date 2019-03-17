@@ -41,6 +41,8 @@ local atBank = false
 local inCombat = false
 local altTriggered = 0
 local MailOpened = false
+local refMuleFrame = nil
+
 --------------------------------------
 -- Key Bindings
 BINDING_NAME_MULES = "Show Mules"
@@ -491,7 +493,7 @@ end
 -- Raider
 ------------------------------------------------
 -- Create a new profile or update existing
-function createProfile(profile)
+function Mule_CreateProfile(profile)
 	local name = UnitName("player")
 	-- Remove all items for profile
 	if Mule["players"][name]["active"] == nil then
@@ -613,7 +615,6 @@ function Mule_RemoveProfile(player, profile)
 	for k, v in pairs(Mule["players"][player]["profiles"]) do
 		if k == profile then
 			Mule["players"][player]["profiles"][k] = nil
-			Mule["players"][player]["profiles"][k].count = 0
 			return true
 		end
 	end
@@ -693,8 +694,8 @@ function Mule_ShowProfiles(name)
 		table.sort(view[key])
 	end
 	MuleFrame_SetTree(view, "PROFILE")
-	if not MuleFrame:IsVisible() then
-		ShowUIPanel(MuleFrame)
+	if not refMuleFrame:IsVisible() then
+		ShowUIPanel(refMuleFrame)
 	end 
 end
 
@@ -997,8 +998,9 @@ local function supplyFromVendor()
 end
 -- Request to provide mules
 local function reqSynq(name, addon)
+	local _name = fixName(name)
 	for k,v in pairs(Mule["players"]) do
-		if k == name then
+		if k == _name then
 			local player = UnitName("player")
 			for l,w in pairs(Mule["players"][name]["mules"]) do
 				for m, filter in pairs(w) do
@@ -1010,7 +1012,7 @@ local function reqSynq(name, addon)
 					end
 				end
 			end
-			Print("Synqed with "..name)
+			Print("Synqed with ".._name)
 			return true
 		end
 	end
@@ -1178,7 +1180,7 @@ local function supply(name)
 	Print("Supplied "..name)
 end
 
-local function synqHandler(options)
+function Mule_SynqHandler(options)
 	if options == nil or options == "" then
 		Print("Need name to send mules to.")
 		return false
@@ -1187,7 +1189,7 @@ local function synqHandler(options)
 end
 
 -- helper for slash supply
-local function supplyHandler(options)
+function Mule_SupplyHandler(options)
 	local name = UnitName("player")
 	if options ~= nil and options ~= "" then
 		name = fixName(options)
@@ -1223,26 +1225,27 @@ end
 
 -- Remove a mule
 function Mule_UnRegister(player, name)
+	local _name = fixName(name)
 	for k,v in pairs(Mule["players"][player]["mules"]) do
-		if k == name then
-			Mule["players"][player]["mules"][name] = nil
-			Print("Removed mule: "..name)
-			if MuleFrame and MuleFrame:IsShown() then
+		if k == _name then
+			Mule["players"][player]["mules"][_name] = nil
+			Print("Removed mule: ".._name)
+			if refMuleFrame and refMuleFrame:IsShown() then
 				MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
 			end
 			return
 		end
 	end
-	Print("Mule doesn't exist: "..name)
+	Print("Mule doesn't exist: ".._name)
 end
 
 -- Add mule
-local function registerMule(player, name)
-	if Mule["players"][player]["mules"][name] == nil then
-		Print("Registring mule: "..name)
-		Mule["players"][player]["mules"][name] = {}
-	else
-		Print("Mule already exists: "..name)
+function Mule_RegisterMule(player, name)
+	local _name = fixName(name)
+	if Mule["players"][player]["mules"][_name] == nil then
+		Print("Registring mule: ".._name)
+		Mule["players"][player]["mules"][_name] = {}
+		Print("Mule already exists: ".._name)
 	end
 end
 
@@ -1285,7 +1288,7 @@ function Mule_AddToMule(player, name, filter)
 	end
 	Print("Adding filter to mule: "..name..", "..filter)
 	tinsert(Mule["players"][player]["mules"][name], filter)
-	if MuleFrame and MuleFrame:IsShown() then
+	if refMuleFrame and refMuleFrame:IsShown() then
 		MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
 	end
 	return true
@@ -1300,7 +1303,7 @@ function Mule_RemoveFromMule(player, mule, filter)
 		if v == filter then
 			Mule["players"][player]["mules"][mule][k] = nil
 			Print("Removed "..filter.." from "..mule)
-			if MuleFrame and MuleFrame:IsShown() then
+			if refMuleFrame and refMuleFrame:IsShown() then
 				MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
 			end
 			return true
@@ -1442,8 +1445,6 @@ local function handleLink(link)
 	return false
 end
 -------------------------------------------
--- Init Mule
-local MuleFrame = nil
 
 function Mule_initSaves(arg)
 	if Mule == nil then
@@ -1452,9 +1453,9 @@ function Mule_initSaves(arg)
 			Mule["players"] = {}
 		end
 	end
-	if MuleFrame == nil then
+	if refMuleFrame == nil then
 		CreateFrame('GameTooltip', 'MuleTooltip', nil, 'GameTooltipTemplate')
-		MuleFrame = MuleFrame_Create()
+		refMuleFrame = MuleFrame_Create(UIParent)
 		Print("by CubeNicke aka Yrrol @ vanillagaming")
 	end
 end
@@ -1465,7 +1466,7 @@ function Mule_checkVars()
 		Mule["players"][name] = {}
 		Mule["players"][name]["bags"] = {}
 		Mule["players"][name]["profiles"] = {}
-		createProfile()
+		Mule_CreateProfile()
 	end
 	if Mule["players"][name]["mules"] == nil then
 		Mule["players"][name]["mules"] = { vendor = {}}
@@ -1473,10 +1474,10 @@ function Mule_checkVars()
 end
 
 -- refresh helper of muleframe (MULES)
-local function Mule_RefreshMules()
+function Mule_ShowMules()
 	MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
-	if not MuleFrame:IsVisible() then
-		ShowUIPanel(MuleFrame)
+	if not refMuleFrame:IsVisible() then
+		ShowUIPanel(refMuleFrame)
 	end
 end
 
@@ -1484,20 +1485,20 @@ end
 
 local slashcommands = {
 	{ cmd = "activate", fn = function(args) Mule_ActivateProfile(args) Mule_ShowProfiles(UnitName("player")) end, help = "activate <profile> - sets profile as active, will show which items should be in bags"},
-	{ cmd = "base", fn = function(args) createProfile() Mule_ShowProfiles(UnitName("player")) end, help = "base - update/create default profile base" },
+	{ cmd = "base", fn = function(args) Mule_CreateProfile() Mule_ShowProfiles(UnitName("player")) end, help = "base - update/create default profile base" },
 	{ cmd = "help", fn = function(args) Mule_HelpHandler(args) end, help = "help [<cmd>]"},
 	{ cmd = "list_mules", fn = function(args) listMules(UnitName("player")) end, help = "list_mules - console output mules" },
 	{ cmd = "list_profiles", fn = function(args) listProfiles(UnitName("player")) end, help = "list_profiles - console output profiles"},
-	{ cmd = "mules", fn = function(args) Mule_RefreshMules() end, help = "mules - show frame, to edit mules" },
+	{ cmd = "mules", fn = function(args) Mule_ShowMules() end, help = "mules - show frame, to edit mules" },
 	{ cmd = "profile", fn = function(args) createProfile(args); Mule_ShowProfiles(UnitName("player")); end, help = "profile <profile> - Create/update profile" },
 	{ cmd = "profiles", fn = function(args) Mule_ShowProfiles(UnitName("player")) end, help = "profiles - show frame, to edit profiles" },
-	{ cmd = "register", fn = function(args) registerMule(UnitName("player"), fixName(args)) MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE") end, help = "register <mule> - register new mule" },
+	{ cmd = "register", fn = function(args) Mule_RegisterMule(UnitName("player"), args) refMuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE") end, help = "register <mule> - register new mule" },
 	{ cmd = "remove", fn = function(args) removeProfile(args); Mule_ShowProfiles(UnitName("player")); end, help = "remove <profile> - remove a profile" },
-	{ cmd = "supply", fn = function(args) supplyHandler(fixName(args)) end, help = "supply [<player>] - supply player or self (only at Bank or at Vendor)" },
+	{ cmd = "supply", fn = function(args) Mule_SupplyHandler(fixName(args)) end, help = "supply [<player>] - supply player or self (only at Bank or at Vendor)" },
 	{ cmd = "unload", fn = function(args) unload() end, help = "unload - sell to vendor store at bank or mail to mules" },
-	{ cmd = "unregister", fn = function(args) Mule_UnRegister(UnitName("player"), fixName(args)) end, help = "unregister <mule> - Remove a mule" },
+	{ cmd = "unregister", fn = function(args) Mule_UnRegister(UnitName("player"), args) end, help = "unregister <mule> - Remove a mule" },
 	{ cmd = "addworn", fn = function(args) Mule_addWorn() end,  help = "Add worn items to active profile" },
-	{ cmd = "synq", fn = function(args) synqHandler(args) end, help = "Synq known mules" },
+	{ cmd = "synq", fn = function(args) Mule_SynqHandler(args) end, help = "Synq known mules" },
 	-- Debugging
 	{ cmd = "debug", fn = function(args) if toggleDebug() then Print("Debug is now on") else Print("Debug is now off") end end, help = "debug - toggle debug output" },
 	{ cmd = "diff", fn = function(args) handleDiff(args) end, help = "diff - check item diff against active profile" },
@@ -1696,7 +1697,7 @@ function Mule_OnUpdate()
 				end
 				return
 			end
-			if (not MuleFrame or not MuleFrame:IsVisible()) and IsAltKeyDown() then
+			if (not refMuleFrame or not refMuleFrame:IsVisible()) and IsAltKeyDown() then
 				if GetTime() > altTriggered + 5 then
 					Print("Unloading")
 					altTriggered = GetTime()
@@ -1704,7 +1705,7 @@ function Mule_OnUpdate()
 				end
 			end
 		end
-	elseif (not MuleFrame or not MuleFrame:IsVisible()) and (atVendor or atBank) then
+	elseif (not refMuleFrame or not refMuleFrame:IsVisible()) and (atVendor or atBank) then
 		if IsAltKeyDown() then
 			if GetTime() > altTriggered + 5 then
 				Print("Unloading/Supplying")
@@ -1714,6 +1715,11 @@ function Mule_OnUpdate()
 			end
 		end
 	end
+end
+
+function Mule_UnloadSupply()
+	unload()
+	supply(UnitName("player"))
 end
 
 -- low level init

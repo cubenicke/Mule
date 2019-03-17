@@ -1,11 +1,11 @@
 ## Interface: 11200
 ## Title: Mule
 ## Notes: To make raiding consumables managable
-## Version: 0.95
+## Version: 1.00
 ## Author: cubenicke
 ## DefaultState: enabled
 ## OptionalDeps: SortBags
-## SavedVariables: Mule
+## SavedVariables: Mule, MuleFrame
 MuleFrame.lua
 Mule.xml
 

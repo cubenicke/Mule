@@ -15,8 +15,133 @@ local MFVars = {
 	noRows = 1,
 	mode = "MULE",
 	maxRows = 1,
-	keepPos = false
+	keepPos = false,
+	context = {},
+	closeAction = nil,
+	filter = nil,
 	}
+
+local function deleteMuleItem(mule, item)
+	Mule_RemoveFromMule(UnitName("player"), mule, item)
+	Mule_ShowMules()
+end
+
+local function deleteMule(mule)
+	Mule_UnRegister(UnitName("player"), mule)
+	Mule_ShowMules()
+end
+
+local function showProfiles()
+	Mule_ShowProfiles(UnitName("player"))
+end
+
+local function showMules()
+	Mule_ShowMules()
+end
+
+local function unloadSupply()
+	Mule_UnloadSupply()
+end
+
+local function activateProfile(profile)
+	MFVars.keepPos = true
+	Mule_ActivateProfile(profile)
+	Mule_ShowProfiles(UnitName("player"))
+end
+
+local function removeProfile(profile)
+	Mule_RemoveProfile(UnitName("player"), profile)
+	MFVars.keepPos = true
+	Mule_ShowProfiles(UnitName("player"))
+end
+
+local function deleteFilter(profile, filter)
+	Mule_RemoveFromProfile(UnitName("player"), profile, filter)
+	for _,k in pairs(MFVars.sorted) do
+		local v = MFVars.tree[k]
+		if profile == k then
+			for l,x in pairs(v) do
+				if x == filter then
+					MFVars.tree[k][l] = nil
+				end
+			end
+		end
+	end
+	MFVars.keepPos = true
+	Mule_ShowProfiles(UnitName("player"))
+end
+
+local function deleteProfile(profile)
+	Mule_RemoveProfile(UnitName("player"), profile)
+	MFVars.keepPos = true
+	Mule_ShowProfiles(UnitName("player"))
+end
+
+local function supplyMule(mule)
+	Mule_SupplyHandler(mule)
+end
+
+local function synqMule(mule)
+	Mule_SynqHandler(mule)
+end
+
+local function closeAddFilter(filter)
+	Mule_AddToMule(UnitName("player"), MFVars.editMule, filter)
+	MFVars.keepPos = true
+	Mule_ShowMules()
+end
+
+local function addFilter(mule)
+	local x, y = GetCursorPosition()
+	MFVars.editMule = mule
+	MFVars.closeAction = closeAddFilter
+	MuleFrame_Editbox:SetPoint("TOPLEFT", nil, "BOTTOMLEFT", x + 130, y)
+	ShowUIPanel(MuleFrame_Editbox)
+end
+
+local function closeCreate(text)
+	if MFVars.mode == "MULE" then
+		Mule_RegisterMule(UnitName("player"), text)
+		MFVars.keepPos = true
+		Mule_ShowMules()
+	else
+		Mule_CreateProfile(text)
+		MFVars.keepPos = true
+		Mule_ShowProfiles(UnitName("player"))
+	end
+end
+
+local function addButtonPressed()
+	local x, y = GetCursorPosition()
+	MFVars.closeAction = closeCreate
+	MuleFrame_Editbox:SetPoint("TOPLEFT", nil, "BOTTOMLEFT", x + 130, y)
+	ShowUIPanel(MuleFrame_Editbox)
+end
+
+MenuFrame_Context = {
+	["item"] = {
+		{["text"] = "Delete", arg1 = nil, arg2 = nil, func = deleteMuleItem },
+	},
+	["profile"] = {
+		{["text"] = "Activate", arg1 = nil, arg2 = nil, func = activateProfile},
+		{["text"] = "Delete", arg1 = nil, arg2 = nil, func = removeProfile },
+	},
+	["filter"] = {
+		{["text"] = "Delete", arg1 = nil, arg2 = nil, func = deleteFilter},
+	},
+	["mule"] = {
+		{ ["text"] = "Supply", arg1 = nil, arg2 = nil, func = supplyMule },
+		{ ["text"] = "Synq", arg1 = nil, arg2 = nil, func = synqMule },
+		{ ["text"] = "Add filter", arg1 = nil, arg2 = nil, func = addFilter },
+		{ ["text"] = "Delete", arg1 = nil, arg2 = nil, func = deleteMule },
+	},
+	["options"] = {
+		{ ["text"] = "Mules", arg1 = nil, arg2 = nil, func = showMules },
+		{ ["text"] = "Profiles", arg1 = nil, arg2 = nil, func = showProfiles },
+		{ ["text"] = "Unload/Supply", arg1 = nil, arg2 = nil, func = unloadSupply },
+		--{ ["text"] = "lock/unlock", arg1 = nil, arg2 = nil, func = nil },
+	},
+}
 
 function MuleFrame_SetTree(_tree, mode)
 	MFVars.tree = _tree
@@ -140,7 +265,7 @@ end
 local function CreateRow(hParent, id)
 	local frame = GetFrame("Button", "Mulerow"..id, hParent)
 	frame:SetPoint("TOPLEFT", hParent, "TOPLEFT", 0, 0)
-	
+
 	-- Row extenssion
 	frame:SetWidth(200)
 	frame:SetHeight(15)
@@ -179,56 +304,78 @@ local function CreateRow(hParent, id)
 	end)
 
 	-- handler for clicked row
+	frame:RegisterForClicks("RightButtonDown")
 	frame:SetScript("OnClick", function ()
+		local owner = getOwner(id)
 		if MFVars.mode == "MULE" then
 			if IsAltKeyDown() then
-				local owner = getOwner(id)
 				-- Remove mule or a filter for mule
 				if owner == nil then
 					owner = frame.text:GetText()
-					Mule_UnRegister(UnitName("player"), owner)
+					deleteMule(owner)
 					return
 				end
-				Mule_RemoveFromMule(UnitName("player"), owner, frame.text:GetText())
+				deleteMuleItem(owner, frame.text:GetText())
 				return
+			elseif arg1 == "RightButton" then
+				if owner == nil then
+					menu = "mule"
+					arg1 = frame.text:GetText()
+					arg2 = nil
+				else
+					menu = "item"
+					arg1 = owner
+					arg2 = frame.text:GetText()
+				end
+				for _, v in MenuFrame_Context[menu] do
+					v.arg1 = arg1
+					v.arg2 = arg2
+				end
+				ToggleDropDownMenu(1, nil, MFVars.context[menu], "cursor")
 			end
 		elseif MFVars.mode == "PROFILE" then
 			if IsAltKeyDown() then
 				-- Remove profile or a item in profile
-				local owner = getOwner(id)
 				if owner == nil then
 					owner = frame.text:GetText()
 					-- owner Strip (Active)
-					owner = splitOnFirst(owner, " %(Active%)")
-					Mule_RemoveProfile(UnitName("player"), owner)
-					MFVars.keepPos = true
-					Mule_ShowProfiles(UnitName("player"))
+					_owner = splitOnFirst(owner, " %(Active%)")
+					deleteProfile(_owner)
 					return
 				end
 				local name = frame.text:GetText()
 				-- name strip " x <nn>"
 				name = splitOnFirst(name, " x ")
 				_owner = splitOnFirst(owner, " %(Active%)")
-				Mule_RemoveFromProfile(UnitName("player"), _owner, name)
-				for _,k in pairs(MFVars.sorted) do
-					local v = MFVars.tree[k]
-					if owner == k then
-						for l,x in pairs(v) do
-							if x == frame.text:GetText() then
-								MFVars.tree[k][l] = nil
-							end
-						end
-					end
-				end
-			else
-				local owner = getOwner(id)
+				deleteFilter(_owner, frame.text:GetText())
+			elseif arg1 == "RightButton" then
 				if owner == nil then
 					owner = frame.text:GetText()
-					owner = splitOnFirst(owner, " %(Active%)")
-					MFVars.keepPos = true
-					Mule_ActivateProfile(owner)
-					Mule_ShowProfiles(UnitName("player"))
+					-- owner Strip (Active)
+					_owner = splitOnFirst(owner, " %(Active%)")
+					menu = "profile"
+					arg1 = _owner
+				else
+					-- owner Strip (Active)
+					_owner = splitOnFirst(owner, " %(Active%)")
+					name = frame.text:GetText()
+					-- name strip " x <nn>"
+					name = splitOnFirst(name, " x ")
+					menu = "filter"
+					arg1 = _owner
+					arg2 = name
 				end
+				for _, v in MenuFrame_Context[menu] do
+					v.arg1 = arg1
+					v.arg2 = arg2
+				end
+				ToggleDropDownMenu(1, nil, MFVars.context[menu], "cursor")
+			else
+				owner = frame.text:GetText()
+				owner = splitOnFirst(owner, " %(Active%)")
+				MFVars.keepPos = true
+				Mule_ActivateProfile(owner)
+				Mule_ShowProfiles(UnitName("player"))
 			end
 		end
 	end)
@@ -306,51 +453,6 @@ local function CreateRow(hParent, id)
 	return frame
 end
 
---[[
-	frame.fs_title = fs_title
-
-	frame.cb = {}
-
-	for k,v in ipairs(tCheck) do
-		local cb = CreateFrame("CheckButton", v[1], frame, "UICheckButtonTemplate")
-		cb:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 8, -(4+(k-1)*14))
-		cb:SetWidth(16)
-		cb:SetHeight(16)
-		
-		if v[2] then cb.tooltipTitle = v[2] end
-		if v[3] then cb.tooltipText = v[3] end
-
-		local num = tonumber(string.sub(v[1], string.find(v[1], "%d+")))
-
-		cb:SetScript("OnShow", function()
-			LazyPig_GetOption(num)
-		end)
-		cb:SetScript("OnClick", function()
-			LazyPig_SetOption(num);
-		end)
-		cb:SetScript("OnEnter", function()
-			if this.tooltipTitle then
-				GameTooltip:SetOwner(this, "ANCHOR_TOPRIGHT")
-				--GameTooltip:SetScale(.71)
-				GameTooltip:SetBackdropColor(.01, .01, .01, .91)
-				GameTooltip:SetText(this.tooltipTitle)
-				if this.tooltipText then
-					GameTooltip:AddLine(this.tooltipText, 1, 1, 1)
-				end
-				GameTooltip:Show()
-			end
-		end)
-		cb:SetScript("OnLeave", function()
-			GameTooltip:Hide();
-		end)
-
-		frame.cb[k] = cb
-	end
-
-	return frame
-end
-]]
-
 -- Calculate indentation to pixels
 local function MuleFrame_indent(ind)
 	return 10 + 10 * ind
@@ -361,47 +463,196 @@ local function MuleFrame_row(r)
 	return -36 + -15 * r
 end
 
--- Create the MuleFrame dialog
-function MuleFrame_Create()
-	-- Option Frame
-	local frame = CreateFrame("Frame", "MuleFrame")
+function MenuFrameContextInit_Item()
+	for _,v in MenuFrame_Context["item"] do
+		UIDropDownMenu_AddButton(v)
+	end
+end
+function MenuFrameContextInit_Mule()
+	for _,v in MenuFrame_Context["mule"] do
+		UIDropDownMenu_AddButton(v)
+	end
+end
+function MenuFrameContextInit_Profile()
+	for _,v in MenuFrame_Context["profile"] do
+		UIDropDownMenu_AddButton(v)
+	end
+end
+function MenuFrameContextInit_Options()
+	for _,v in MenuFrame_Context["options"] do
+		UIDropDownMenu_AddButton(v)
+	end
+end
+function MenuFrameContextInit_Filter()
+	for _,v in MenuFrame_Context["filter"] do
+		UIDropDownMenu_AddButton(v)
+	end
+end
 
-	tinsert(UISpecialFrames,"MuleFrame")
-	--frame:SetScale(.81)
+local function MuleFrame_CreateIcon(parent)
+	-- icon frames
+	local b = CreateFrame("Button", "MuleFrame_Icon", parent)
+	b:SetWidth(32)
+	b:SetHeight(32)
+	b:SetNormalTexture("Interface\\AddOns\\Mule\\icons\\donkey-icon-32x32.blp")
+	b:SetFrameStrata("BACKGROUND")
+	if MuleFrame.Icon == nil then
+		MuleFrame.Icon = { x = (GetScreenWidth() / 2) / this:GetEffectiveScale(),
+		y = (GetScreenHeight() / 2) / this:GetEffectiveScale() / 2}
+	end
+	b:SetPoint("BOTTOMLEFT", MuleFrame.Icon.x, MuleFrame.Icon.y)
+	b:SetScript("OnUpdate", function()
+		if this.isMoving then
+			local x, y = GetCursorPosition()
+			MuleFrame.Icon.x = (x - 16 / this:GetEffectiveScale()) / this:GetEffectiveScale()
+			MuleFrame.Icon.y = (y - 16 / this:GetEffectiveScale()) / this:GetEffectiveScale()
+			this:SetPoint("BOTTOMLEFT", MuleFrame.Icon.x, MuleFrame.Icon.y)
+		end
+	end)
+	b:SetScript("OnMouseDown", function()
+		if arg1 == "LeftButton" and not this.isMoving then
+			this.isMoving = true
+		else
+			this.isMoving = false
+		end
+	end)
+	b:SetScript("OnMouseUp", function()
+		this.isMoving = false
+	end)
+
+	b:RegisterForClicks("RightButtonDown")
+	b:SetScript("OnClick", function()
+		this.isMoving = false
+		if arg1 == "RightButton" then
+			ToggleDropDownMenu(1, nil, MFVars.context["options"], "cursor")
+		end
+	end)
+	b:Show()
+end
+
+local function MuleFrame_CreateContextMenus(parent)
+	local i = 0
+	for k,v in MenuFrame_Context do
+		i = i + 1
+		if k == "item" then
+			func = MenuFrameContextInit_Item
+		elseif k == "mule" then
+			func = MenuFrameContextInit_Mule
+		elseif k == "profile" then
+			func = MenuFrameContextInit_Profile
+		elseif k == "filter" then
+			func = MenuFrameContextInit_Filter
+		elseif k == "options" then
+			func = MenuFrameContextInit_Options
+		end
+		MFVars.context[k] = CreateFrame("Frame", "MuleFrameContext_"..k, parent, "UIDropDownMenuTemplate")
+		UIDropDownMenu_Initialize(MFVars.context[k], func, "MENU")
+	end
+end
+
+function MuleFrame_CreateEditBox(parent)
+	-- Option Frame
+	local eframe = CreateFrame("Frame", "MuleFrame_EditBox", parent)
+	eframe:SetWidth(200)
+	eframe:SetHeight(80)
+	eframe:Hide()
+	eframe:SetScript('OnKeyDown', function() if arg1 == 'ESCAPE' then this:Hide() end end)
+	eframe:SetFrameStrata("DIALOG")
+	eframe:SetPoint("TOPLEFT", nil, "TOPLEFT", 400, -50)
+	eframe:SetBackdrop( {
+			bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+			tile = true,
+			tileSize = 32,
+			edgeSize = 32,
+			insets = { left = 11, right = 12, top = 12, bottom = 11 }
+		})
+	eframe:SetBackdropColor(.01, .01, .01, .91)
+
+	eframe.editFrame = CreateFrame("EditBox", "MuleFrame_EditBoxWidget", eframe, "InputBoxTemplate")
+	eframe.editFrame:SetPoint("CENTER", eframe, "BOTTOM", 3, 50)
+	eframe.editFrame:SetWidth(150)
+	eframe.editFrame:SetHeight(25)
+	eframe.editFrame:SetMovable(false)
+	eframe.editFrame:SetAutoFocus(true)
+	eframe.editFrame:SetMaxLetters(64)
+	eframe.editFrame:SetScript("OnEscapePressed", function()
+	 eframe:Hide()
+	end)
+	eframe.editFrame:SetScript("OnEnterPressed", function ()
+		local text = eframe.editFrame:GetText()
+		if text ~= "" then
+			MFVars.closeAction(text)
+		end
+		eframe:Hide()
+	end)
+
+	eframe.closeBtn = CreateFrame("Button", "MuleFrame_Button", eframe, "GameMenuButtonTemplate")
+	eframe.closeBtn:SetPoint("CENTER", eframe, "BOTTOM", 50, 25)
+	eframe.closeBtn:SetWidth(40)
+	eframe.closeBtn:SetHeight(20)
+	eframe.closeBtn:SetTextColor(1,0.98431372549,0,1)
+	eframe.closeBtn:SetText("OK")
+	eframe.closeBtn:SetScript("OnClick", function ()
+		local text = eframe.editFrame:GetText()
+		if text ~= "" then
+			MFVars.closeAction(text)
+		end
+		eframe:Hide()
+	end)
+	tinsert(UISpecialFrames,"MuleFrame_EditBox")
+
+	MuleFrame_Editbox = eframe
+end
+
+-- Create the MuleFrame dialog
+function MuleFrame_Create(parent)
+
+	if MuleFrame == nil then
+		MuleFrame = {}
+	end
+
+	MuleFrame_CreateIcon(parent)
+
+	-- Option Frame
+	local frame = CreateFrame("Frame", "MuleFrameDlg", parent)
+	tinsert(UISpecialFrames, "MuleFrameDlg")
+	MuleFrame_CreateEditBox(parent)
+	MuleFrame_CreateContextMenus(parent)
 
 	-- Set sizes
 	MFVars.noRows = 20
 	frame:SetWidth(250)
 	frame:SetHeight(-MuleFrame_row(MFVars.noRows + 2))
-	
+
 	frame:SetPoint("TOPLEFT", nil, "TOPLEFT", 400, -50)
 	frame:SetBackdrop( {
-			bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", 
-			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", 
-			tile = true, 
-			tileSize = 32, 
-			edgeSize = 32, 
+			bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+			tile = true,
+			tileSize = 32,
+			edgeSize = 32,
 			insets = { left = 11, right = 12, top = 12, bottom = 11 }
-		} );
+		} )
 	frame:SetBackdropColor(.01, .01, .01, .91)
 
 	frame:SetMovable(true)
 	frame:EnableMouse(true)
-	frame:EnableMouseWheel(true) 
+	frame:EnableMouseWheel(true)
 	frame:SetClampedToScreen(false)
 	frame:RegisterForDrag("LeftButton")
 	frame:Hide()
 	-- Handle drag of window
 	frame:SetScript("OnMouseDown", function()
 		if arg1 == "LeftButton" and not this.isMoving then
-			this:StartMoving();
-			this.isMoving = true;
+			this:StartMoving()
+			this.isMoving = true
 		end
 	end)
 	frame:SetScript("OnMouseUp", function()
 		if arg1 == "LeftButton" and this.isMoving then
-			this:StopMovingOrSizing();
-			this.isMoving = false;
+			this:StopMovingOrSizing()
+			this.isMoving = false
 		end
 	end)
 	frame:SetScript("OnMouseWheel", function()
@@ -415,8 +666,8 @@ function MuleFrame_Create()
 	end)
 	frame:SetScript("OnHide", function()
 		if this.isMoving then
-			this:StopMovingOrSizing();
-			this.isMoving = false;
+			this:StopMovingOrSizing()
+			this.isMoving = false
 		end
 	end)
 	-- Handler for dropped item
@@ -446,10 +697,10 @@ function MuleFrame_Create()
 		end
 		ClearCursor()
 	end)
-	
+
 	-- MenuTitle Frame
 	local texture_title = frame:CreateTexture("MuleFrameTitle")
-	texture_title:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header", true);
+	texture_title:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header", true)
 	texture_title:SetWidth(266)
 	texture_title:SetHeight(58)
 	texture_title:SetPoint("CENTER", frame, "TOP", 0, -20)
@@ -469,24 +720,24 @@ function MuleFrame_Create()
 	btn_close:SetWidth(24)
 	btn_close:SetHeight(24)
 
-	-- Create Mule icon
-	local icon = CreateFrame("Frame", nil, frame)
-	icon:SetFrameStrata("BACKGROUND")
-	icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -18)
-	icon:SetWidth(32)
-	icon:SetHeight(32)
-	
-	local icon_tex = icon:CreateTexture(nil, "BACKGROUND")
-	icon_tex:SetTexture("Interface\\Addons\\Mule\\icons\\donkey-icon-32x32.tga")
-	icon_tex:SetAllPoints(icon)
-	icon.texture = icon_tex
+	-- Create Add button
+	local btn_add = CreateFrame("Button", "MuleFrameAddButton", frame, "UIPanelButtonTemplate")
+	btn_add:SetPoint("TOPRIGHT", frame, "TOPLEFT", 16 + 16, -16)
+	btn_add:SetWidth(16)
+	btn_add:SetHeight(16)
+	btn_add:SetText("+")
 
+	frame.btn_add = btn_add
 	frame.btn_close = btn_close
+
+	frame.btn_add:SetScript("OnClick", function()
+		addButtonPressed()
+	end)
 
 	frame.btn_close:SetScript("OnClick", function()
 		this:GetParent():Hide()
 	end)
-	
+
 	frame.row = {}
 	for i=1,MFVars.noRows do
 		frame.row[i] = CreateRow(frame, i)
@@ -511,7 +762,7 @@ function MuleFrame_Create()
 				if  dst_r <= MFVars.noRows then
 					frame.row[dst_r]:Show()
 					frame.row[dst_r].text:SetText(k)
-					frame.row[dst_r].text:SetTextColor(1,0.98431372549,0,1);
+					frame.row[dst_r].text:SetTextColor(1,0.98431372549,0,1)
 					frame.row[dst_r]:SetPoint("TOPLEFT", frame, "TOPLEFT", MuleFrame_indent(i), MuleFrame_row(dst_r))
 					frame.row[dst_r].dec_icon:Hide()
 					frame.row[dst_r].inc_icon:Hide()
@@ -531,7 +782,7 @@ function MuleFrame_Create()
 							dst_r = dst_r + 1
 							frame.row[dst_r]:Show()
 							frame.row[dst_r].text:SetText(m)
-							frame.row[dst_r].text:SetTextColor(1,1,1,1);
+							frame.row[dst_r].text:SetTextColor(1,1,1,1)
 							frame.row[dst_r].minus_icon:Hide()
 							frame.row[dst_r].plus_icon:Hide()
 							frame.row[dst_r]:SetPoint("TOPLEFT", frame, "TOPLEFT", MuleFrame_indent(i), MuleFrame_row(dst_r))
