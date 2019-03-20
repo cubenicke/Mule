@@ -197,8 +197,9 @@ local function numFreeSlots(bags)
 end
 
 --------------------------------------
-function Mule_GetItemFromName(name)
-	for _, container in pairs(PersonalBags) do
+
+local function getFromBags(bags, name)
+    for _, container in pairs(bags) do
 		for position = 1, GetContainerNumSlots(container) do
 			local itemId = ItemID(container, position)
 			if itemId then
@@ -209,6 +210,18 @@ function Mule_GetItemFromName(name)
 			end
 		end
 	end
+end
+
+--------------------------------------
+
+function Mule_GetItemFromName(name)
+	local item = getFromBags(PersonalBags, name)
+	if item then
+		return item
+	elseif atBank then
+		item = getFromBags(BankBags, name)
+	end
+	return item
 end
 --------------------------------------
 function Mule_GetItemName(id)
@@ -246,6 +259,31 @@ function Mule_GetItem(id)
 				item.conjured = conjured
 				item.requires = requires
 				return item
+			end
+		end
+	end
+	if atBank then
+		for _, container in pairs(BankBags) do
+			for position = 1, GetContainerNumSlots(container) do
+				local charges, usable, soulbound, quest, conjured, bop, requires = TooltipInfo(container, position)
+				local itemId = ItemID(container, position)
+				if itemId and tonumber(itemId) == id then
+					local item = {}
+					item.id = id
+					item.name = name
+					item.link = link
+					item.type = type
+					item.quality = quality
+					item.subtype = subtype
+					item.stack = stack
+					item.charges = charges
+					item.soulbound = soulbound
+					item.quest = quest
+					item.bop = bop
+					item.conjured = conjured
+					item.requires = requires
+					return item
+				end
 			end
 		end
 	end
@@ -956,8 +994,8 @@ local function supplyFromBank()
 	return fail == 0
 end
 
-local function handleLockedItem()
-	for _, container in pairs(PersonalBags) do
+local function handleLockItemBags(bags)
+	for _, container in pairs(bags) do
 		for position = 1, GetContainerNumSlots(container) do
 			local _,_,locked = GetContainerItemInfo(container, position)
 			if locked then
@@ -966,10 +1004,19 @@ local function handleLockedItem()
 				local item = Mule_GetItem(id)
 				if item then
 					Mule_Dragged = item.name
+					return true
 				end
-				return
 			end
 		end
+	end
+	return false
+end
+
+local function handleLockedItem()
+	if handleLockItemBags(PersonalBags) then
+		return
+	elseif atBank and handleLockItemBags(BankBags) then
+		return
 	end
 	Mule_Dragged = nil
 end

@@ -304,6 +304,7 @@ local function CreateRow(hParent, id)
 	end)
 
 	-- handler for clicked row
+	frame:RegisterForClicks("LeftButtonDown")
 	frame:RegisterForClicks("RightButtonDown")
 	frame:SetScript("OnClick", function ()
 		local owner = getOwner(id)
@@ -339,30 +340,30 @@ local function CreateRow(hParent, id)
 				if owner == nil then
 					owner = frame.text:GetText()
 					-- owner Strip (Active)
-					_owner = splitOnFirst(owner, " %(Active%)")
-					deleteProfile(_owner)
+					owner = splitOnFirst(owner, " %(Active%)")
+					deleteProfile(owner)
 					return
 				end
 				local name = frame.text:GetText()
 				-- name strip " x <nn>"
 				name = splitOnFirst(name, " x ")
-				_owner = splitOnFirst(owner, " %(Active%)")
-				deleteFilter(_owner, frame.text:GetText())
+				owner = splitOnFirst(owner, " %(Active%)")
+				deleteFilter(owner, name)
 			elseif arg1 == "RightButton" then
 				if owner == nil then
 					owner = frame.text:GetText()
 					-- owner Strip (Active)
-					_owner = splitOnFirst(owner, " %(Active%)")
+					owner = splitOnFirst(owner, " %(Active%)")
 					menu = "profile"
-					arg1 = _owner
+					arg1 = owner
 				else
 					-- owner Strip (Active)
-					_owner = splitOnFirst(owner, " %(Active%)")
+					owner = splitOnFirst(owner, " %(Active%)")
 					name = frame.text:GetText()
 					-- name strip " x <nn>"
 					name = splitOnFirst(name, " x ")
 					menu = "filter"
-					arg1 = _owner
+					arg1 = owner
 					arg2 = name
 				end
 				for _, v in MenuFrame_Context[menu] do
