@@ -138,7 +138,7 @@ MenuFrame_Context = {
 	["options"] = {
 		{ ["text"] = "Mules", arg1 = nil, arg2 = nil, func = showMules },
 		{ ["text"] = "Profiles", arg1 = nil, arg2 = nil, func = showProfiles },
-		{ ["text"] = "Unload/Supply", arg1 = nil, arg2 = nil, func = unloadSupply },
+		--{ ["text"] = "Unload/Supply", arg1 = nil, arg2 = nil, func = unloadSupply },
 		--{ ["text"] = "lock/unlock", arg1 = nil, arg2 = nil, func = nil },
 	},
 }
