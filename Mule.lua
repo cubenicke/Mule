@@ -63,6 +63,7 @@ local function isBankBag(bag)
 	end
 	return false
 end
+
 --------------------------------------
 -- Output helpers
 local debug = false
@@ -176,6 +177,25 @@ local function ItemID(container, position)
 	end
 	return nil
 end
+
+--------------------------------------
+
+local function numFreeSlots(bags)
+	local free = 0
+	if not bags == BankBags and not atBank then
+		return free
+	end
+	for _, container in pairs(bags) do
+		for position = 1, GetContainerNumSlots(container) do
+			local id = ItemID(container, position)
+			if id == nil then
+				free = free + 1
+			end
+		end
+	end
+	return free
+end
+
 --------------------------------------
 function Mule_GetItemFromName(name)
 	for _, container in pairs(PersonalBags) do
