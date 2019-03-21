@@ -1069,7 +1069,7 @@ local function reqSynq(name, addon)
 	for k,v in pairs(Mule["players"]) do
 		if k == _name then
 			local player = UnitName("player")
-			for l,w in pairs(Mule["players"][name]["mules"]) do
+			for l,w in pairs(Mule["players"][_name]["mules"]) do
 				for m, filter in pairs(w) do
 					if Mule["players"][player]["mules"][l] == nil then
 						Mule["players"][player]["mules"][l] = {}
@@ -1083,17 +1083,17 @@ local function reqSynq(name, addon)
 			return true
 		end
 	end
-	if (UnitName("party1") or "") == name then
+	if (UnitName("party1") or "") == _name then
 		if (addon) then
-			SendAddonMessage("Mule", "Mule:SynqReq-"..name, "PARTY")
+			SendAddonMessage("Mule", "Mule:SynqReq-".._name, "PARTY")
 		else
-			SendChatMessage("Mule:SynqReq-"..name, "PARTY", nil, name)
+			SendChatMessage("Mule:SynqReq-".._name, "PARTY", nil, _name)
 		end
 	elseif UnitLevel("player") >= 10 then
-		SendChatMessage("Mule:SynqReq-"..name, "WHISPER", nil, name)
+		SendChatMessage("Mule:SynqReq-".._name, "WHISPER", nil, _name)
 	elseif muleSentInvite == nil or muleSentInvite + 3 < GetTime() then
-		Print("Inviting "..name)
-		InviteByName(name)
+		Print("Inviting ".._name)
+		InviteByName(_name)
 		muleSentInvite = GetTime()
 	end
 	return true
