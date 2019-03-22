@@ -1559,7 +1559,7 @@ local slashcommands = {
 	{ cmd = "mules", fn = function(args) Mule_ShowMules() end, help = "mules - show frame, to edit mules" },
 	{ cmd = "profile", fn = function(args) createProfile(args); Mule_ShowProfiles(UnitName("player")); end, help = "profile <profile> - Create/update profile" },
 	{ cmd = "profiles", fn = function(args) Mule_ShowProfiles(UnitName("player")) end, help = "profiles - show frame, to edit profiles" },
-	{ cmd = "register", fn = function(args) Mule_RegisterMule(UnitName("player"), args) refMuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE") end, help = "register <mule> - register new mule" },
+	{ cmd = "register", fn = function(args) Mule_RegisterMule(UnitName("player"), args) MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE") end, help = "register <mule> - register new mule" },
 	{ cmd = "remove", fn = function(args) removeProfile(args); Mule_ShowProfiles(UnitName("player")); end, help = "remove <profile> - remove a profile" },
 	{ cmd = "supply", fn = function(args) Mule_SupplyHandler(fixName(args)) end, help = "supply [<player>] - supply player or self (only at Bank or at Vendor)" },
 	{ cmd = "unload", fn = function(args) unload() end, help = "unload - sell to vendor store at bank or mail to mules" },
