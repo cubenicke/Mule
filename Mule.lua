@@ -1312,6 +1312,7 @@ function Mule_RegisterMule(player, name)
 	if Mule["players"][player]["mules"][_name] == nil then
 		Print("Registring mule: ".._name)
 		Mule["players"][player]["mules"][_name] = {}
+	else
 		Print("Mule already exists: ".._name)
 	end
 end
