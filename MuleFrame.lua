@@ -283,8 +283,10 @@ local function CreateRow(hParent, id)
 					local item = Mule_GetItemFromName(name)
 					if item then
 						Mule_AddToMule(UnitName("player"), owner, item.type)
+						MFVars.keepPos = true
 					end
 				else
+					MFVars.keepPos = true
 					Mule_AddToMule(UnitName("player"), owner, name)
 				end
 			elseif MFVars.mode == "PROFILE" then
@@ -496,7 +498,7 @@ local function MuleFrame_CreateIcon(parent)
 	b:SetWidth(32)
 	b:SetHeight(32)
 	b:SetNormalTexture("Interface\\AddOns\\Mule\\icons\\donkey-icon-32x32.blp")
-	b:SetFrameStrata("BACKGROUND")
+	--b:SetFrameStrata("BACKGROUND")
 	if MuleFrame.Icon == nil then
 		MuleFrame.Icon = { x = (GetScreenWidth() / 2) / this:GetEffectiveScale(),
 		y = (GetScreenHeight() / 2) / this:GetEffectiveScale() / 2}
