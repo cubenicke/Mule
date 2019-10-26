@@ -48,15 +48,17 @@ local refMuleFrame = nil
 BINDING_NAME_MULES = "Show Mules"
 BINDING_NAME_PROFILES = "Show Profiles"
 BINDING_HEADER_MULE = "Mule"
+
 --------------------------------------
 -- returned dragged item
 function Mule_getDragged()
 	return Mule_Dragged
 end
+
 --------------------------------------
 -- check if bag is a bank bag
 local function isBankBag(bag)
-	for _,v in pairs(BankBags) do
+	for _, v in pairs(BankBags) do
 		if v == bag then
 			return true
 		end
@@ -70,18 +72,18 @@ local debug = false
 
 -- Print message
 local function Print(msg)
-	if (not DEFAULT_CHAT_FRAME) then
+	if not DEFAULT_CHAT_FRAME then
 		return
 	end
-	DEFAULT_CHAT_FRAME:AddMessage("Mule: "..(msg or ""))
+	DEFAULT_CHAT_FRAME:AddMessage("Mule: " .. (msg or ""))
 end
 
 -- Print debug message
 local function Debug(msg) 
-	if (not debug or not DEFAULT_CHAT_FRAME) then
+	if (not debug) or (not DEFAULT_CHAT_FRAME) then
 		return
 	end
-	DEFAULT_CHAT_FRAME:AddMessage("MuleDbg: "..(msg or ""))
+	DEFAULT_CHAT_FRAME:AddMessage("MuleDbg: " .. (msg or ""))
 end
 
 -- toggle debug output
@@ -89,13 +91,14 @@ local function toggleDebug()
 	debug = not debug
 	return debug
 end
+
 --------------------------------------
 -- Lock functions for bag positions, since locked isn't set until server locks it
 -- thanks to nnn
 local slotLocks = {}
 
 -- Lock slot for nn seconds
-local function lockPosition(container,position)
+local function lockPosition(container, position)
 	local slots = slotLocks[container] or {}
 	if not slotLocks[container] then 
 		slotLocks[container] = slots
@@ -104,16 +107,18 @@ local function lockPosition(container,position)
 end
 
 -- Check if slot is locked by internal lock
-local function isLocked(container,position)
+local function isLocked(container, position)
 	local slots = slotLocks[container]
 	if not slots then
 		return false
 	end
 	return GetTime() - (slots[position] or 0) < 2
 end
+
 --------------------------------------
+-- make first letter upper case
 local function fixName(name)
-	return strupper(string.sub(name, 1, 1))..strlower(string.sub(name, 2))
+	return strupper(string.sub(name, 1, 1)) .. strlower(string.sub(name, 2))
 end
 
 --------------------------------------
@@ -148,7 +153,7 @@ function TooltipInfo(container, position)
 		end
 		if strfind(text, '^' .. "Requires ") then
 			local s = { "Alchemy", "Enchanting", "Tailoring", "Leatherworking", "Engineering", "Blacksmithing", "Cooking"}
-			for _,v in s do
+			for _, v in s do
 				if strfind(text, v) then
 					requires = v
 				end
@@ -158,6 +163,7 @@ function TooltipInfo(container, position)
 
 	return charges or 1, usable, soulbound, quest, conjured, bop, requires or ""
 end
+
 --------------------------------------
 -- Get item id from a link
 local function getIdFromLink(link)
@@ -198,8 +204,8 @@ end
 
 --------------------------------------
 
-local function getFromBags(bags, name)
-    for _, container in pairs(bags) do
+local function getItemFromBags(bags, name)
+	for _, container in pairs(bags) do
 		for position = 1, GetContainerNumSlots(container) do
 			local itemId = ItemID(container, position)
 			if itemId then
@@ -213,21 +219,21 @@ local function getFromBags(bags, name)
 end
 
 --------------------------------------
-
+-- Get item from bags and if none in bags get from bank bags
 function Mule_GetItemFromName(name)
-	local item = getFromBags(PersonalBags, name)
-	if item then
-		return item
-	elseif atBank then
-		item = getFromBags(BankBags, name)
+	local item = getItemFromBags(PersonalBags, name)
+	if (not item) and atBank then
+		item = getItemFromBags(BankBags, name)
 	end
 	return item
 end
+
 --------------------------------------
 function Mule_GetItemName(id)
 	local name, link, quality, _, _, _, _, _ = GetItemInfo(id)
 	return name
 end
+
 --------------------------------------
 -- Get item info from id
 function Mule_GetItem(id)
@@ -236,14 +242,14 @@ function Mule_GetItem(id)
 	end
 	local name, link, quality, _, type, subType, stack, invType = GetItemInfo(id)
 	if not link then
-		Print("Failed to find id '"..id.."'")
+		Print("Failed to find id '" .. id .. "'")
 		return nil
 	end
 	for _, container in pairs(PersonalBags) do
 		for position = 1, GetContainerNumSlots(container) do
 			local charges, usable, soulbound, quest, conjured, bop, requires = TooltipInfo(container, position)
 			local itemId = ItemID(container, position)
-			if itemId and tonumber(itemId) == id then
+			if itemId and (tonumber(itemId) == id) then
 				local item = {}
 				item.id = id
 				item.name = name
@@ -267,7 +273,7 @@ function Mule_GetItem(id)
 			for position = 1, GetContainerNumSlots(container) do
 				local charges, usable, soulbound, quest, conjured, bop, requires = TooltipInfo(container, position)
 				local itemId = ItemID(container, position)
-				if itemId and tonumber(itemId) == id then
+				if itemId and (tonumber(itemId) == id) then
 					local item = {}
 					item.id = id
 					item.name = name
@@ -313,6 +319,7 @@ function Mule_GetItem(id)
 	end
 	return nil
 end
+
 --------------------------------------
 -- Get current inventory
 local function getCurrentInventory(name)
@@ -327,9 +334,9 @@ local function getCurrentInventory(name)
 					local _, count = GetContainerItemInfo(container, position)
 					local name = Mule_GetItemName(tonumber(itemId))
 					if name then
-						Debug("Found "..tostring(count).." x "..name.." on "..tostring(container).." "..tostring(position))
+						Debug("Found " .. tostring(count) .. " x " .. name .. " on " .. tostring(container) .. " " .. tostring(position))
 					else
-						Debug("Found "..tostring(count).." x "..tostring(itemId).." on "..tostring(container).." "..tostring(position))
+						Debug("Found " .. tostring(count) .. " x " .. tostring(itemId) .. " on " .. tostring(container) .. " " .. tostring(position))
 					end
 					inventory[tonumber(itemId)] = (inventory[tonumber(itemId)] or 0) + count
 				end
@@ -338,14 +345,14 @@ local function getCurrentInventory(name)
 		-- Skip ammo slot (0), shirt tabbard and bags
 		for slotId = 1, 18 do
 			local itemLink = GetInventoryItemLink("player", slotId)
-			if itemLink or slotId ~= 4 then
+			if itemLink or (slotId ~= 4) then
 				local itemId = getIdFromLink(itemLink)
 				if itemId then
 					local name = Mule_GetItemName(tonumber(itemId))
 					if name then
-						Debug("Wearing "..name)
+						Debug("Wearing " .. name)
 					else
-						Debug("Wearing "..tostring(itemId))
+						Debug("Wearing " .. tostring(itemId))
 					end
 					inventory[tonumber(itemId)] = (inventory[tonumber(itemId)] or 0) + 1
 				end
@@ -354,10 +361,10 @@ local function getCurrentInventory(name)
 		return inventory
 	else
 		if Mule["players"][name] then
-			Print("Checking player on same account "..name)
-			for k,v in pairs(Mule["players"][name]["bags"]) do
-				for ix,item in pairs(Mule["players"][name]["bags"][k]) do
-					Debug("Found "..tostring(item.id).." "..tostring(item.count or item.no).." on "..tostring(k).." "..tostring(ix))
+			Print("Checking player on same account " .. name)
+			for k, v in pairs(Mule["players"][name]["bags"]) do
+				for ix, item in pairs(Mule["players"][name]["bags"][k]) do
+					Debug("Found " .. tostring(item.id) .. " " .. tostring(item.count or item.no) .. " on " .. tostring(k) .. " " .. tostring(ix))
 					inventory[tonumber(item.id)] = (inventory[tonumber(item.id)] or 0) + (item.count or item.no)
 				end
 			end
@@ -401,11 +408,11 @@ local function SendMailItem(name, id)
 	end
 	local title
 	if name2 and ((count or 0) > 1) then
-		title = name2.." x "..count
+		title = name2 .. " x " .. count
 	else
 		title = name2 or "Mule mail"
 	end
-	Print("Sending to "..name.." "..title)
+	Print("Sending to " .. name .. " " .. title)
 	SendMail(name, title)
 	return true
 end
@@ -423,7 +430,7 @@ function sendItem(name, item, count)
 	local is_SendMailFrame_Shown = SendMailFrame:IsShown();
 	if not is_SendMailFrame_Shown then
 		-- Delay first mail sent
-		MuleMail.lastSend = GetTime() + 5
+		MuleMail.lastSend = GetTime() + 10
 		MailFrameTab2:Click()
 		MailOpened = true
 		return 0
@@ -432,16 +439,16 @@ function sendItem(name, item, count)
 		for position = 1, GetContainerNumSlots(container) do
 			local i = ItemID(container, position)
 			if i and tonumber(i) == item and count > 0 then
-				Debug("Found item in bag "..tostring(i).." vs "..tostring(item).." "..tostring(count))
+				Debug("Found item in bag " .. tostring(i) .. " vs " .. tostring(item) .. " " .. tostring(count))
 				local _, c = GetContainerItemInfo(container, position)
 				if count < c then
-					Print("Spliting stack "..tostring(c).." "..tostring(count))
+					Print("Spliting stack " .. tostring(c) .. " " .. tostring(count))
 					if atMail then
 						local _, dst_container, dst_position = MoveTo(false, container, position, count)
 						if dst_container ~= nil and dst_position ~= nil then
 							UseContainerItem(dst_container, dst_position)
 							if SendMailItem(name, tonumber(i)) then
-								Debug("Sending stack "..tostring(c).." "..tostring(count))
+								Debug("Sending stack " .. tostring(c) .. " " .. tostring(count))
 							else
 								return 0
 							end
@@ -454,7 +461,7 @@ function sendItem(name, item, count)
 					UseContainerItem(container, position)
 					if atMail then
 						if SendMailItem(name, tonumber(i)) then
-							Debug("Sending stack "..tostring(c).." "..tostring(count))
+							Debug("Sending stack " .. tostring(c) .. " " .. tostring(count))
 							count = count - c
 						else
 							return 0
@@ -462,7 +469,7 @@ function sendItem(name, item, count)
 						return c
 					elseif atVendor or atBank then
 						local itm = Mule_GetItem(i)
-						Print("Unloading "..itm.name.." x "..tostring(c))
+						Print("Unloading " .. itm.name .. " x " .. tostring(c))
 						count = count - c
 					end
 				end
@@ -470,7 +477,7 @@ function sendItem(name, item, count)
 		end
 	end
 	sendCorrect = false
-	Debug("No items in bags "..tostring(item))
+	Debug("No items in bags " .. tostring(item))
 	return -1
 end
 
@@ -484,7 +491,7 @@ local function sendFromQueue()
 			Debug("Dropping from Queue, no name or no count")
 			return true
 		end
-		Debug("Send "..tostring(v.id).." x"..tostring(v.count).." to "..v.name)
+		Debug("Send " .. tostring(v.id) .. " x" .. tostring(v.count) .. " to " .. v.name)
 		local c = sendItem(v.name, v.id, v.count)
 		if c > 0 then
 			v.count = v.count - c
@@ -503,13 +510,13 @@ end
 ------------------------------------------------
 local function numInQueue()
 	local num = 0
-	for _,_ in pairs(sendQueue) do
+	for _, _ in pairs(sendQueue) do
 		num = num + 1
 	end
 	return num
 end
 local function isQueueEmpty()
-	for _,_ in pairs(sendQueue) do
+	for _, _ in pairs(sendQueue) do
 		return false
 	end
 	return true
@@ -520,7 +527,7 @@ end
 function isMailable(id)
 	local item = Mule_GetItem(id)
 	if item and (item.quest or item.soulbound or item.bop) then
-		Debug(item.name.." can't be mailed")
+		Debug(item.name .. " can't be mailed")
 		return false
 	end
 	return true
@@ -532,7 +539,7 @@ local function checkAuthor(player, name)
 		return false
 	end
 	local n = name
-	for k,v in pairs(Mule["players"][player]["mules"]) do
+	for k, v in pairs(Mule["players"][player]["mules"]) do
 		if k == n then
 			return true
 		end
@@ -565,10 +572,10 @@ function Mule_CreateProfile(profile)
 	Mule["players"][name]["profiles"][profile] = {}
 	local inv = Mule["players"][name]["profiles"][profile]
 	local curInv = getCurrentInventory()
-	for k,v in pairs(curInv) do
+	for k, v in pairs(curInv) do
 		item = Mule_GetItem(k)
 		if item then
-			Debug("Adding "..tostring(k).." "..item.name)
+			Debug("Adding " .. tostring(k) .. " " .. item.name)
 			item.count = v
 			inv[k] = item
 		end
@@ -580,7 +587,7 @@ function Mule_CreateProfile(profile)
 			if itemId then
 				item = Mule_GetItem(itemId)
 				if item then
-					Debug("Wearing "..tostring(itemId).." "..item.name)
+					Debug("Wearing " .. tostring(itemId) .. " " .. item.name)
 					item.count = v
 					inv[tostring(itemId)] = item
 				end
@@ -611,7 +618,7 @@ function Mule_addWorn(profile)
 					if Mule["players"][player]["profiles"][profile][itemId] and Mule["players"][player]["profiles"][profile][itemId].count == count[itemId] then
 						-- Already exists in this profile
 					else
-						Print("Added "..item.name)
+						Print("Added " .. item.name)
 						Mule["players"][player]["profiles"][profile][itemId] = item
 						Mule["players"][player]["profiles"][profile][itemId].count = count[itemId]
 					end
@@ -630,7 +637,7 @@ function removeProfile(profile)
 	end
 	for k, v in pairs(Mule["players"][name]["profiles"]) do
 		if k == profile then
-			Print("Removing profile: "..profile)
+			Print("Removing profile: " .. profile)
 			Mule["players"][name]["profiles"][profile] = nil
 			if Mule["players"][name]["active"] == profile then
 				Mule["players"][name]["active"] = base
@@ -647,7 +654,7 @@ function Mule_ActivateProfile(profile)
 	local name = UnitName("player")
 	for k, v in pairs(Mule["players"][name]["profiles"]) do
 		if k == profile then
-			Print("Setting active profile: "..profile)
+			Print("Setting active profile: " .. profile)
 			Mule["players"][name]["active"] = profile
 			return
 		end
@@ -659,7 +666,7 @@ end
 -- Get item from a profile
 function Mule_GetItemFromProfile(player, name)
 	for k, v in pairs(Mule["players"][player]["profiles"]) do
-		for l,s in pairs(Mule["players"][player]["profiles"][k]) do
+		for l, s in pairs(Mule["players"][player]["profiles"][k]) do
 			if s.name == name then
 				return s
 			end
@@ -682,19 +689,19 @@ end
 function Mule_RemoveFromProfile(player, profile, name)
 	for k, v in pairs(Mule["players"][player]["profiles"]) do
 		if k == profile then
-			for l,s in pairs(Mule["players"][player]["profiles"][k]) do
-				Debug("Profileitem "..s.name)
+			for l, s in pairs(Mule["players"][player]["profiles"][k]) do
+				Debug("Profileitem " .. s.name)
 				if s.name == name then
-					Print("Removing "..name.." from "..k)
+					Print("Removing " .. name .. " from " .. k)
 					Mule["players"][player]["profiles"][k][l] = nil
 					return id
 				end
 			end
-			Print("Not in profile "..name)
+			Print("Not in profile " .. name)
 			return 0
 		end
 	end
-	Debug("No profile exists for this player "..profile.. "player "..player)
+	Debug("No profile exists for this player " .. profile .. "player " .. player)
 	return 0
 end
 
@@ -703,8 +710,8 @@ local function listProfiles(name)
 	if Mule["players"][name] == nil or Mule["players"][name]["profiles"] == nil then
 		return false
 	end
-	Print("Showing profiles for: "..name)
-	for k,v in pairs(Mule["players"][name]["profiles"]) do
+	Print("Showing profiles for: " .. name)
+	for k, v in pairs(Mule["players"][name]["profiles"]) do
 		if k == Mule["players"][name]["active"] then
 			Print(k .. " (Active)")
 		else
@@ -722,9 +729,9 @@ local function showProfile(name, profile)
 	if profile == nil then
 		profile = Mule["players"][name]["active"]
 	end
-	Print("Showing profile: "..profile)
-	for k,v in pairs(Mule["players"][name]["profiles"][profile]) do
-		Print(v.name.." = "..tostring(v.count))
+	Print("Showing profile: " .. profile)
+	for k, v in pairs(Mule["players"][name]["profiles"][profile]) do
+		Print(v.name .. " = " .. tostring(v.count))
 	end
 	return false
 end
@@ -735,10 +742,10 @@ function Mule_ShowProfiles(name)
 	if Mule["players"][name] == nil or Mule["players"][name]["profiles"] == nil then
 		return false
 	end
-	for k,v in pairs(Mule["players"][name]["profiles"]) do
+	for k, v in pairs(Mule["players"][name]["profiles"]) do
 		local key
 		if k == Mule["players"][name]["active"] then
-			key = k.." (Active)"
+			key = k .. " (Active)"
 			collapsed = false
 		else
 			key = k
@@ -746,8 +753,8 @@ function Mule_ShowProfiles(name)
 		end
 		view[key] = {}
 		view[key].collapsed = collapsed
-		for l,s in pairs(Mule["players"][name]["profiles"][k]) do
-			tinsert(view[key], s.name.." x "..tostring(s.count))
+		for l, s in pairs(Mule["players"][name]["profiles"][k]) do
+			tinsert(view[key], s.name .. " x " .. tostring(s.count))
 		end
 		table.sort(view[key])
 	end
@@ -761,8 +768,8 @@ end
 function findProfiles(item)
 	local name = UnitName("player")
 	local ps = {}
-	for k,v in pairs(Mule["players"][name]["profiles"]) do
-		for l,s in pairs(Mule["players"][name]["profiles"][k]) do
+	for k, v in pairs(Mule["players"][name]["profiles"]) do
+		for l, s in pairs(Mule["players"][name]["profiles"][k]) do
 			if s.name == item.name then
 				ps[k] = s.count
 			end
@@ -774,11 +781,11 @@ end
 -- Add a item to a profile
 function Mule_AddToProfile(player, profile, id, count)
 	if Mule["players"][player] == nil or Mule["players"][player]["profiles"] == nil then
-		Print("Can't find player"..player)
+		Print("Can't find player" .. player)
 		return 0
 	end
 	if Mule["players"][player]["profiles"][profile] == nil then
-		Print("Can't find profile "..profile)
+		Print("Can't find profile " .. profile)
 		return 0
 	end
 	if Mule["players"][player]["profiles"][profile][id] and Mule["players"][player]["profiles"][profile][id].count and Mule["players"][player]["profiles"][profile][id].count + count >= 0 then
@@ -804,7 +811,7 @@ function MoveTo(toBank, src_container, src_position, dest_count)
 	local item = Mule_GetItem(src_id)
 	local copy_count = 0
 	ClearCursor()
-	Debug("Pickup "..tostring(src_id).." bag: "..tostring(src_container)..", "..tostring(src_position).." "..tostring(src_count).." "..tostring(dest_count))
+	Debug("Pickup " .. tostring(src_id) .. " bag: " .. tostring(src_container) .. ", " .. tostring(src_position) .. " " .. tostring(src_count) .. " " .. tostring(dest_count))
 	if srcLocked or isLocked(src_container, src_position) then
 		Debug("Locked")
 		return 0
@@ -837,7 +844,7 @@ function MoveTo(toBank, src_container, src_position, dest_count)
 				local id = ItemID(container, position)
 				if not dstLocked and not isLocked(container, position) then
 					if id == nil then
-						Debug("Placing in "..tostring(container)..", "..tostring(position).." "..tostring(copy_count).." "..tostring(count))
+						Debug("Placing in " .. tostring(container) .. ", " .. tostring(position) .. " " .. tostring(copy_count) .. " " .. tostring(count))
 						PickupContainerItem(container, position)
 						if not CursorHasItem() then
 							Debug("Placed in bank")
@@ -875,13 +882,13 @@ function moveItem(tobank, id, idcount)
 				if count >= idcount then
 					local n = MoveTo(tobank, container, position, idcount)
 					if item then
-						Print("Moving "..tostring(idcount).." "..(item.name or "").." (Moved "..tostring(n)..")")
+						Print("Moving " .. tostring(idcount) .. " " .. (item.name or "") .. " (Moved " .. tostring(n) .. ")")
 					end
 					idcount = idcount - n
 				else
 					local n = MoveTo(tobank, container, position, count)
 					if item then
-						Print("Moving "..tostring(idcount).." "..(item.name or "").." (Moved "..tostring(n)..")")
+						Print("Moving " .. tostring(idcount) .. " " .. (item.name or "") .. " (Moved " .. tostring(n) .. ")")
 					end
 					idcount = idcount - n
 				end
@@ -906,13 +913,13 @@ function findWhatsExcess(mailable)
 	end
 	local active = Mule["players"][name]["active"]
 	local check = Mule["players"][name]["profiles"][active]
-	for s,_ in pairs(inv) do
+	for s, _ in pairs(inv) do
 		for k, v in pairs(check) do
 			if not v.count then
 				v.count = 0
 			end
 			if v and tonumber(v.id) == s then
-				if tonumber(inv[s])  > tonumber(v.count) then
+				if tonumber(inv[s]) > tonumber(v.count) then
 					inv[s] = (inv[s] or 0) - v.count
 				else
 					inv[s] = 0
@@ -920,7 +927,7 @@ function findWhatsExcess(mailable)
 			end
 		end
 		if (tonumber(inv[s]) or 0) > 0 then
-			Debug("Extra items "..tostring(s))
+			Debug("Extra items " .. tostring(s))
 			if (not mailable) or isMailable(s) then
 				excess[s] = inv[s]
 				noe = noe + 1
@@ -962,7 +969,7 @@ local function findWhatsMissing(name)
 			end
 		end
 		if found == false then
-			Debug("Not found "..tostring(v.count).." of "..tostring(k))
+			Debug("Not found " .. tostring(v.count) .. " of " .. tostring(k))
 			diff[k] = v.count
 			diffs = diffs + 1
 		elseif (tonumber(inv[k]) or 0) > 0 then
@@ -990,14 +997,15 @@ local function supplyFromBank()
 			fail = fail + 1
 		end
 	end
-	Debug("Supply Failed: "..fail)
+	Debug("Supply Failed: " .. fail)
 	return fail == 0
 end
 
+-- Handle incoming lock on a set of bags
 local function handleLockItemBags(bags)
 	for _, container in pairs(bags) do
 		for position = 1, GetContainerNumSlots(container) do
-			local _,_,locked = GetContainerItemInfo(container, position)
+			local _, _, locked = GetContainerItemInfo(container, position)
 			if locked then
 				local link = GetContainerItemLink(container, position)
 				local id = getIdFromLink(link)
@@ -1012,6 +1020,7 @@ local function handleLockItemBags(bags)
 	return false
 end
 
+-- Handle incoming lock on a bag item
 local function handleLockedItem()
 	if handleLockItemBags(PersonalBags) then
 		return
@@ -1038,13 +1047,13 @@ local function supplyFromVendor()
 			local found	= false
 			local name, _, price, quantity, numAvailable, _, _ = GetMerchantItemInfo(index)
 			local _, _, _, _, id, _, _, _, _, _, _, _, _, _ = string.find(link, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
-			Debug("Found id: "..tostring(id).." "..name..tostring(quantity))
+			Debug("Found id: " .. tostring(id) .. " " .. name .. tostring(quantity))
 			for k, v in pairs(diff) do
 				if tonumber(k) == tonumber(id) then
 					local amount = math.floor(v / quantity)
 					found = true
 					if amount and quantity then
-						Print("Buying "..name.." x "..tostring(quantity * amount))
+						Print("Buying " .. name .. " x " .. tostring(quantity * amount))
 						for j = 1, amount do
 							BuyMerchantItem(index)
 						end
@@ -1066,10 +1075,10 @@ end
 -- Request to provide mules
 local function reqSynq(name, addon)
 	local _name = fixName(name)
-	for k,v in pairs(Mule["players"]) do
+	for k, v in pairs(Mule["players"]) do
 		if k == _name then
 			local player = UnitName("player")
-			for l,w in pairs(Mule["players"][_name]["mules"]) do
+			for l, w in pairs(Mule["players"][_name]["mules"]) do
 				for m, filter in pairs(w) do
 					if Mule["players"][player]["mules"][l] == nil then
 						Mule["players"][player]["mules"][l] = {}
@@ -1079,45 +1088,46 @@ local function reqSynq(name, addon)
 					end
 				end
 			end
-			Print("Synqed with ".._name)
+			Print("Synqed with " .. _name)
 			return true
 		end
 	end
 	if (UnitName("party1") or "") == _name then
 		if (addon) then
-			SendAddonMessage("Mule", "Mule:SynqReq-".._name, "PARTY")
+			SendAddonMessage("Mule", "Mule:SynqReq-" .. _name, "PARTY")
 		else
-			SendChatMessage("Mule:SynqReq-".._name, "PARTY", nil, _name)
+			SendChatMessage("Mule:SynqReq-" .. _name, "PARTY", nil, _name)
 		end
 	elseif UnitLevel("player") >= 10 then
-		SendChatMessage("Mule:SynqReq-".._name, "WHISPER", nil, _name)
-	elseif muleSentInvite == nil or muleSentInvite + 3 < GetTime() then
-		Print("Inviting ".._name)
+		SendChatMessage("Mule:SynqReq-" .. _name, "WHISPER", nil, _name)
+	elseif (muleSentInvite == nil) or ((muleSentInvite + 3) < GetTime()) then
+		Print("Inviting " .. _name)
 		InviteByName(_name)
 		muleSentInvite = GetTime()
 	end
 	return true
 end
+
 -- Request diff from remote source if not remote function will fail
 local function reqDiff(name, addon)
 	-- return false if it is a local player
 	local dest = nil
-	for k,v in pairs(Mule["players"]) do
+	for k, v in pairs(Mule["players"]) do
 		if k == name then
 			dest = name
 		end
 	end
 	if dest == nil then
 		if (UnitName("party1") or "") == name then
-			if (addon) then
-				SendAddonMessage("Mule", "Mule:DiffReq-"..name, "PARTY")
+			if addon then
+				SendAddonMessage("Mule", "Mule:DiffReq-" .. name, "PARTY")
 			else
-				SendChatMessage("Mule:DiffReq-"..name, "PARTY", nil, name)
+				SendChatMessage("Mule:DiffReq-" .. name, "PARTY", nil, name)
 			end
 		elseif UnitLevel("player") >= 10 then
-			SendChatMessage("Mule:DiffReq-"..name, "WHISPER", nil, name)
-		elseif muleSentInvite == nil or muleSentInvite + 3 < GetTime() then
-			Print("Inviting "..name)
+			SendChatMessage("Mule:DiffReq-" .. name, "WHISPER", nil, name)
+		elseif (muleSentInvite == nil) or ((muleSentInvite + 3) < GetTime()) then
+			Print("Inviting " .. name)
 			InviteByName(name)
 			muleSentInvite = GetTime()
 		end
@@ -1178,9 +1188,9 @@ local function handleDiff(name)
 	for k, v in pairs(diff) do
 		local item = Mule_GetItem(k)
 		if item then
-			Print(item.name.." "..k.." x "..tostring(v))
+			Print(item.name .. " " .. k .. " x " .. tostring(v))
 		else
-			Print("<NN> "..k.." x "..tostring(v))
+			Print("<NN> " .. k .. " x " .. tostring(v))
 		end
 	end
 	return true
@@ -1199,13 +1209,12 @@ local function handleExcess(name)
 	for k, v in pairs(diff) do
 		local name = Mule_GetItemName(k)
 		if name then
-			Print(name.." "..k.." x "..tostring(v))
+			Print(name .. " " .. k .. " x " .. tostring(v))
 		else
-			Print("<NN> "..k.." x "..tostring(v))
+			Print("<NN> " .. k .. " x " .. tostring(v))
 		end
 	end
 end
-
 
 -- call the correct supplier
 local function supply(name)
@@ -1244,9 +1253,10 @@ local function supply(name)
 			_G.SortBankBags()
 		end
 	end
-	Print("Supplied "..name)
+	Print("Supplied " .. name)
 end
 
+-- helper for requesting synq
 function Mule_SynqHandler(options)
 	if options == nil or options == "" then
 		Print("Need name to send mules to.")
@@ -1280,11 +1290,11 @@ end
 -- output mules for player
 local function listMules(player)
 	Print("Listing mules:")
-	for k,v in pairs(Mule["players"][player]["mules"]) do
+	for k, v in pairs(Mule["players"][player]["mules"]) do
 		Print(k)
-		for l,w in pairs(v) do
+		for l, w in pairs(v) do
 			if l ~= "collapsed" then
-				Print("  "..tostring(w))
+				Print("  " .. tostring(w))
 			end
 		end
 	end
@@ -1293,27 +1303,27 @@ end
 -- Remove a mule
 function Mule_UnRegister(player, name)
 	local _name = fixName(name)
-	for k,v in pairs(Mule["players"][player]["mules"]) do
+	for k, v in pairs(Mule["players"][player]["mules"]) do
 		if k == _name then
 			Mule["players"][player]["mules"][_name] = nil
-			Print("Removed mule: ".._name)
+			Print("Removed mule: " .. _name)
 			if refMuleFrame and refMuleFrame:IsShown() then
 				MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
 			end
 			return
 		end
 	end
-	Print("Mule doesn't exist: ".._name)
+	Print("Mule doesn't exist: " .. _name)
 end
 
 -- Add mule
 function Mule_RegisterMule(player, name)
 	local _name = fixName(name)
 	if Mule["players"][player]["mules"][_name] == nil then
-		Print("Registring mule: ".._name)
+		Print("Registring mule: " .. _name)
 		Mule["players"][player]["mules"][_name] = {}
 	else
-		Print("Mule already exists: ".._name)
+		Print("Mule already exists: " .. _name)
 	end
 end
 
@@ -1321,15 +1331,15 @@ end
 function Mule_AddToMule(player, name, filter)
 	local id = getIdFromLink(filter)
 	local item = nil
-	if not id or id == 0 then
+	if (not id) or (id == 0) then
 		item = Mule_GetItemFromName(filter)
 	end
 	if not item then
 		item = Mule_GetItem(id)
 	end
 	if Mule["players"][player]["mules"][name] == nil then
-		Print("Mule doesn't exists: "..name)
-		if id and id > 0 then
+		Print("Mule doesn't exists: " .. name)
+		if id and (id > 0) then
 			Mule["players"][player]["mules"][name] = {}
 		else
 			return false
@@ -1354,7 +1364,7 @@ function Mule_AddToMule(player, name, filter)
 			return false
 		end
 	end
-	Print("Adding filter to mule: "..name..", "..filter)
+	Print("Adding filter to mule: " .. name .. ", " .. filter)
 	tinsert(Mule["players"][player]["mules"][name], filter)
 	if refMuleFrame and refMuleFrame:IsShown() then
 		MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
@@ -1370,7 +1380,7 @@ function Mule_RemoveFromMule(player, mule, filter)
 	for k, v in pairs(Mule["players"][player]["mules"][mule]) do
 		if v == filter then
 			Mule["players"][player]["mules"][mule][k] = nil
-			Print("Removed "..filter.." from "..mule)
+			Print("Removed " .. filter .. " from " .. mule)
 			if refMuleFrame and refMuleFrame:IsShown() then
 				MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE")
 			end
@@ -1382,22 +1392,23 @@ end
 -- find Mules
 local function findMules(item)
 	local mules = {}
-	for m,v in pairs(Mule["players"][UnitName("player")]["mules"]) do
-		for n,f in pairs(v) do
+	for m, v in pairs(Mule["players"][UnitName("player")]["mules"]) do
+		for n, f in pairs(v) do
 			if m == UnitName("player") then
 				Debug("self is mule for item")
 			elseif item.soulbound then
-				Debug("soulbound item "..item.name)
+				Debug("soulbound item " .. item.name)
 			elseif item.quest then
-				Debug("quest item "..item.name)
+				Debug("quest item " .. item.name)
 			elseif item.bop then
-				Debug("BOP item "..item.name)
+				Debug("BOP item " .. item.name)
 			elseif "default" == f then
 				tinsert(mules, m)
 			elseif item.name == f then
 				tinsert(mules, m)
-			elseif ((not (item.type == "")) and item.type == f) or (not (item.requires == "")) and item.requires == f then
-				Debug("Type is matching "..item.type)
+			elseif ((not (item.type == "")) and (item.type == f)) or
+			  ((not (item.requires == "")) and (item.requires == f)) then
+				Debug("Type is matching " .. item.type)
 				tinsert(mules, m)
 			end
 		end
@@ -1409,7 +1420,7 @@ end
 ------------------------------------------------
 local function unload()
 	local count = 0
-	if not atBank and not atMail and not atVendor then
+	if (not atBank) and (not atMail) and (not atVendor) then
 		Print("Need to be at mailbox to unload to other players, at Bank and Vendor will unload excess items")
 		return 0
 	end
@@ -1421,40 +1432,42 @@ local function unload()
 		return 0
 	end
 	
-	for id,c in pairs(excess) do
+	for id, c in pairs(excess) do
 		local item = Mule_GetItem(tonumber(id))
 		if item then
-			Debug("Excess item "..item.name)
+			Debug("Excess item " .. item.name)
 			if atMail and item.quality == 0 then
-				Debug("Not mailing Gray items "..item.name)
+				Debug("Not mailing Gray items " .. item.name)
 			elseif atBank then
 				if moveItem(true, item.id, c) == 0 then
 					count = count + 1
 				end
 			else
-				for m,v in pairs(Mule["players"][UnitName("player")]["mules"]) do
-					if ((atMail and (m ~= "vendor")) or (atVendor and m == "vendor")) and item then
-						for n,f in pairs(v) do
+				for m, v in pairs(Mule["players"][UnitName("player")]["mules"]) do
+					if ((atMail and (m ~= "vendor")) or (atVendor and m == "vendor")) and
+					 item then
+						for n, f in pairs(v) do
 							if m == UnitName("player") then
 								Debug("self is mule for item")
 							elseif item.soulbound then
-								Debug("soulbound item "..item.name)
+								Debug("soulbound item " .. item.name)
 							elseif item.quest then
-								Debug("quest item "..item.name)
+								Debug("quest item " .. item.name)
 							elseif item.bop then
-								Debug("BOP item "..item.name)
+								Debug("BOP item " .. item.name)
 							elseif "default" == f then
 								addSendQueue(m, item.id, c)
 							elseif item.name == f then
-								Debug("Name is matching "..item.name)
+								Debug("Name is matching " .. item.name)
 								count = count + 1
 								if atVendor then
 									sendItem(nil, tonumber(item.id), c)
 								elseif atMail then
 									addSendQueue(m, tonumber(item.id), c)
 								end
-							elseif ((not (item.type == "")) and item.type == f) or (not (item.requires == "")) and item.requires == f then
-								Debug("Type is matching "..item.type)
+							elseif ((not (item.type == "")) and item.type == f) or (not (item.requires == ""))
+							 and item.requires == f then
+								Debug("Type is matching " .. item.type)
 								count = count + 1
 								if atVendor then
 									sendItem(nil, tonumber(item.id), c)
@@ -1475,6 +1488,7 @@ local function unload()
 end
 
 -------------------------------------------
+-- dump item and it's relations from link
 local function handleLink(link)
 	local _, _, itemID, enchantID, suffixID, uniqueID = strfind(link, 'item:(%d+):(%d*):(%d*):(%d*)')
 	local item = nil
@@ -1497,24 +1511,25 @@ local function handleLink(link)
 		-- Print Mules
 		local ms = findMules(item)
 		for _, v in pairs(ms) do
-			Print("Registred mule "..v)
+			Print("Registred mule " .. v)
 		end
 		-- Print Profiles
 		local ps = findProfiles(item)
-		for k,v in pairs(ps) do
+		for k, v in pairs(ps) do
 			if tonumber(v) > 1 then
-				Print("Exists in profile "..k.." x "..v)
+				Print("Exists in profile " .. k .. " x " .. v)
 			else
-				Print("Exists in profile "..k)
+				Print("Exists in profile " .. k)
 			end
 		end
 		return true
 	end
 	return false
 end
--------------------------------------------
 
-function Mule_initSaves(arg)
+-------------------------------------------
+-- Setup globals on ADDONS_LOADED event
+local function Mule_initSaves(arg)
 	if Mule == nil then
 		Mule = {}
 		if Mule["players"] == nil then
@@ -1528,7 +1543,8 @@ function Mule_initSaves(arg)
 	end
 end
 
-function Mule_checkVars()
+-- Setup global vars to default if not existing when entering world
+local function Mule_checkVars()
 	local name =UnitName("player")
 	if Mule["players"][name] == nil then
 		Mule["players"][name] = {}
@@ -1552,27 +1568,46 @@ end
 -------------------------------------------
 
 local slashcommands = {
-	{ cmd = "activate", fn = function(args) Mule_ActivateProfile(args) Mule_ShowProfiles(UnitName("player")) end, help = "activate <profile> - sets profile as active, will show which items should be in bags"},
-	{ cmd = "base", fn = function(args) Mule_CreateProfile() Mule_ShowProfiles(UnitName("player")) end, help = "base - update/create default profile base" },
-	{ cmd = "help", fn = function(args) Mule_HelpHandler(args) end, help = "help [<cmd>]"},
-	{ cmd = "list_mules", fn = function(args) listMules(UnitName("player")) end, help = "list_mules - console output mules" },
-	{ cmd = "list_profiles", fn = function(args) listProfiles(UnitName("player")) end, help = "list_profiles - console output profiles"},
-	{ cmd = "mules", fn = function(args) Mule_ShowMules() end, help = "mules - show frame, to edit mules" },
-	{ cmd = "profile", fn = function(args) createProfile(args); Mule_ShowProfiles(UnitName("player")); end, help = "profile <profile> - Create/update profile" },
-	{ cmd = "profiles", fn = function(args) Mule_ShowProfiles(UnitName("player")) end, help = "profiles - show frame, to edit profiles" },
-	{ cmd = "register", fn = function(args) Mule_RegisterMule(UnitName("player"), args) MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE") end, help = "register <mule> - register new mule" },
-	{ cmd = "remove", fn = function(args) removeProfile(args); Mule_ShowProfiles(UnitName("player")); end, help = "remove <profile> - remove a profile" },
-	{ cmd = "supply", fn = function(args) Mule_SupplyHandler(fixName(args)) end, help = "supply [<player>] - supply player or self (only at Bank or at Vendor)" },
-	{ cmd = "unload", fn = function(args) unload() end, help = "unload - sell to vendor store at bank or mail to mules" },
-	{ cmd = "unregister", fn = function(args) Mule_UnRegister(UnitName("player"), args) end, help = "unregister <mule> - Remove a mule" },
-	{ cmd = "addworn", fn = function(args) Mule_addWorn() end,  help = "Add worn items to active profile" },
-	{ cmd = "synq", fn = function(args) Mule_SynqHandler(args) end, help = "Synq known mules" },
+	{ cmd = "activate", fn = function(args) Mule_ActivateProfile(args) Mule_ShowProfiles(UnitName("player")) end,
+	 		help = "activate <profile> - sets profile as active, will show which items should be in bags"},
+	{ cmd = "base", fn = function(args) Mule_CreateProfile() Mule_ShowProfiles(UnitName("player")) end,
+	 		help = "base - update/create default profile base" },
+	{ cmd = "help", fn = function(args) Mule_HelpHandler(args) end,
+			help = "help [<cmd>]"},
+	{ cmd = "list_mules", fn = function(args) listMules(UnitName("player")) end,
+			help = "list_mules - console output mules" },
+	{ cmd = "list_profiles", fn = function(args) listProfiles(UnitName("player")) end,
+			help = "list_profiles - console output profiles"},
+	{ cmd = "mules", fn = function(args) Mule_ShowMules() end,
+			help = "mules - show frame, to edit mules" },
+	{ cmd = "profile", fn = function(args) createProfile(args); Mule_ShowProfiles(UnitName("player")); end,
+			help = "profile <profile> - Create/update profile" },
+	{ cmd = "profiles", fn = function(args) Mule_ShowProfiles(UnitName("player")) end,
+			help = "profiles - show frame, to edit profiles" },
+	{ cmd = "register", fn = function(args) Mule_RegisterMule(UnitName("player"), args) MuleFrame_SetTree(Mule["players"][UnitName("player")]["mules"], "MULE") end,
+			help = "register <mule> - register new mule" },
+	{ cmd = "remove", fn = function(args) removeProfile(args); Mule_ShowProfiles(UnitName("player")); end,
+			help = "remove <profile> - remove a profile" },
+	{ cmd = "supply", fn = function(args) Mule_SupplyHandler(fixName(args)) end,
+			help = "supply [<player>] - supply player or self (only at Bank or at Vendor)" },
+	{ cmd = "unload", fn = function(args) unload() end,
+			help = "unload - sell to vendor store at bank or mail to mules" },
+	{ cmd = "unregister", fn = function(args) Mule_UnRegister(UnitName("player"), args) end,
+			help = "unregister <mule> - Remove a mule" },
+	{ cmd = "addworn", fn = function(args) Mule_addWorn() end,
+			help = "Add worn items to active profile" },
+	{ cmd = "synq", fn = function(args) Mule_SynqHandler(args) end,
+			help = "Synq known mules" },
 	-- Debugging
-	{ cmd = "debug", fn = function(args) if toggleDebug() then Print("Debug is now on") else Print("Debug is now off") end end, help = "debug - toggle debug output" },
-	{ cmd = "diff", fn = function(args) handleDiff(args) end, help = "diff - check item diff against active profile" },
-	{ cmd = "excess", fn = function(args) handleExcess(args) end, help = "Excess - check items not in active profile" },
+	{ cmd = "debug", fn = function(args) if toggleDebug() then Print("Debug is now on") else Print("Debug is now off") end end,
+			help = "debug - toggle debug output" },
+	{ cmd = "diff", fn = function(args) handleDiff(args) end,
+			help = "diff - check item diff against active profile" },
+	{ cmd = "excess", fn = function(args) handleExcess(args) end,
+			help = "Excess - check items not in active profile" },
 }
 
+-- Write helps
 function Mule_HelpHandler(args)
 	if args == "" then
 		for _, v in pairs(slashcommands) do
@@ -1581,7 +1616,7 @@ function Mule_HelpHandler(args)
 	else
 		for _, v in pairs(slashcommands) do
 			if v.cmd == args and v.help then
-				Print(v.cmd.." - "..v.help)
+				Print(v.cmd .. " - " .. v.help)
 				return
 			end
 		end
@@ -1593,7 +1628,7 @@ function Mule_Command(msg)
 	local _, _, cmd, options = string.find(msg, "([%w%p]+)%s*(.*)$")
 	local name = UnitName("player")
 	local ocmd = cmd
-	for _,v in pairs(slashcommands) do
+	for _, v in pairs(slashcommands) do
 		if v.cmd == cmd then
 			v.fn(options)
 			return
@@ -1609,38 +1644,47 @@ function Mule_Command(msg)
 	Print("Unknown command:")
 	Print(msg)
 end
+
 ------------------------------------------------
+-- Handle incoming chat channels
 local function handleChat(msg, author, type, addon)
 
 	if not msg then
 		return false
 	end
-	local _,_,prefix = string.find(msg, "^(Mule:)")
+	local _, _, prefix = string.find(msg, "^(Mule:)")
+	-- Only allow Mule: as prefix
 	if not prefix then
 		Debug("Faulty prefix")
 		return false
 	end
 	if author == UnitName("player") then
-		Debug("I am author "..msg.." "..author)
+		-- Message comming from my self
+		Debug("I am author " .. msg .. " " .. author)
 		return false
 	end
 	if not checkAuthor(UnitName("player"), author) then
-		Print("Untrusted mule request from "..author)
+		-- The author isn't in mules or player list
+		Print("Untrusted mule request from " .. author)
 		return false
 	end
-	local _,_,cmd,player = string.find(msg, "^Mule:(.+)-(.+)")
+	local _, _, cmd, player = string.find(msg, "^Mule:(.+)-(.+)")
+
 	if "EndDiff" == cmd then
+		-- End current synq request
 		curSupplyName = nil
 		if type == "PARTY" then
 			LeaveParty()
 		end
+
 	elseif "SynqReq" == cmd then
+		-- Only allow synq requests targeted to self.
 		if player == UnitName("player") then
-			for k,v in pairs(Mule["players"][player]["mules"]) do
-				local send = "Mule:Synq-"..k
-				for l,w in pairs(v) do
+			for k, v in pairs(Mule["players"][player]["mules"]) do
+				local send = "Mule:Synq-" .. k
+				for l, w in pairs(v) do
 					if l ~= "collapsed" then
-						send = send.. "," ..w
+						send = send .. ", " .. w
 					end
 				end
 				if addon then
@@ -1653,6 +1697,7 @@ local function handleChat(msg, author, type, addon)
 				LeaveParty()
 			end
 		end
+
 	elseif "Synq" == cmd then
 		local i = 0, f
 		local startPos, endPos, firstWord, restOfString = string.find( player, "([^,]+),(.*)");
@@ -1661,16 +1706,19 @@ local function handleChat(msg, author, type, addon)
 			Mule["players"][UnitName("player")]["mules"][mule] = {}
 		end
 		while restOfString do
-			startPos, endPos, firstWord, restOfString = string.find( restOfString, "([^,]+),(.*)");
-			if firstWord == nil then break end
+			local startPos, endPos, firstWord, restOfString = string.find( restOfString, "([^,]+),(.*)");
+			if firstWord == nil then
+				break
+			end
 			Mule_AddToMule(UnitName("player"), mule, firstWord)
 		end
+
 	elseif "DiffReq" == cmd then
 		if player == UnitName("player") then
 			local diffs, diff = findWhatsMissing(player)
-			Debug("Found "..tostring(diffs).." Missing items")
+			Debug("Found " .. tostring(diffs) .. " Missing items")
 			for k, v in pairs(diff) do
-				local send = "Mule:"..tostring(k)..":"..tostring(v).."-"..player
+				local send = "Mule:" .. tostring(k) .. ":" .. tostring(v) .. "-" .. player
 				if (addon) then
 					SendAddonMessage("Mule", send, type)
 				else
@@ -1678,34 +1726,40 @@ local function handleChat(msg, author, type, addon)
 				end
 			end
 			if (addon) then
-				SendAddonMessage("Mule", "Mule:EndDiff-"..player, type)
+				SendAddonMessage("Mule", "Mule:EndDiff-" .. player, type)
 			else
-				SendChatMessage("Mule:EndDiff-"..player, type, nil, author)
+				SendChatMessage("Mule:EndDiff-" .. player, type, nil, author)
 			end
 		else
-			Print("Faulty diff request targeted to "..player)
+			Print("Faulty diff request targeted to " .. player)
 		end
+
 	else
-		local _,_,k,v = string.find(cmd, "(%d+):(%d+)")
+		local _, _, k, v = string.find(cmd, "(%d+):(%d+)")
 		if not k or not v then
+			-- Unknown command
 			return false
 		end
+		-- Add item to q
 		addSendQueue(author, tonumber(k), tonumber(v))
+
 	end
 	return true
 end
+
 ------------------------------------------------
 local function handleErrorMessage(args)
-	Debug("myErr:"..args[1])
+	Debug("myErr:" .. args[1])
 end
 
 ------------------------------------------------
 local function acceptSupplyRequest(leader)
 	if checkAuthor(UnitName("player"), leader) then
-		Print("Party invite accepted from "..(leader or ""))
+		Print("Party invite accepted from " .. (leader or ""))
 		AcceptGroup()
 	end
 end
+
 ------------------------------------------------
 -- Events
 -----------------------------------------------
@@ -1775,7 +1829,7 @@ function Mule_OnUpdate()
 		end
 	elseif (not refMuleFrame or not refMuleFrame:IsVisible()) and (atVendor or atBank) then
 		if IsAltKeyDown() then
-			if GetTime() > altTriggered + 5 then
+			if GetTime() > (altTriggered + 5) then
 				Print("Unloading/Supplying")
 				altTriggered = GetTime()
 				unload()
@@ -1785,6 +1839,7 @@ function Mule_OnUpdate()
 	end
 end
 
+-- Unload player and resupply
 function Mule_UnloadSupply()
 	unload()
 	supply(UnitName("player"))
